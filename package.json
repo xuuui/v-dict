@@ -2,7 +2,7 @@
   "name": "v-dict",
   "version": "1.0.3",
   "type": "module",
-  "description": "vue3 dict manager",
+  "description": "Vue3 Dict Manager",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "typings": "dist/index.d.ts",
