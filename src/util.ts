@@ -52,31 +52,6 @@ export function toMap(data: Recordable<DictItemRecord> | DictItemRecord[]) {
   return isArray(data) ? listToMap(data) : objToMap(data)
 }
 
-const noop = () => {}
-
-export type CreatePromiseReturn<T> = Promise<T> & {
-  resolve: (value: T | PromiseLike<T>) => void
-  reject: (reason?: any) => void
-}
-
-export function createPromise<T = any>(
-  executor?: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void
-): CreatePromiseReturn<T> {
-  let resolve: CreatePromiseReturn<T>['resolve'] = noop
-  let reject: CreatePromiseReturn<T>['reject'] = noop
-
-  const promise = new Promise<T>((_resolve, _reject) => {
-    resolve = _resolve
-    reject = _reject
-    executor?.(_resolve, _reject)
-  }) as CreatePromiseReturn<T>
-
-  promise.resolve = resolve
-  promise.reject = reject
-
-  return promise
-}
-
 export const defineDictData = <
   const T extends { label: string } & Recordable,
   const K extends string

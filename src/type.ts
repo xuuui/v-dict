@@ -8,7 +8,7 @@
 import type { O } from 'ts-toolbelt'
 import type { Except, Simplify, ValueOf } from 'type-fest'
 
-import type { createPromise } from './util'
+import type { createPromise } from './create-promise'
 
 export type Recordable<T = any> = Record<string, T>
 
@@ -83,4 +83,4 @@ export type Dict<
   load: (ctx: Ctx) => Promise<void>
 }
 
-export type LoadPromise = ReturnType<typeof createPromise<void>> | undefined
+export type LoadPromise = ReturnType<typeof createPromise<void>>
