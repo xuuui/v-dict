@@ -98,8 +98,8 @@ const { E, map, list } = statusDict
 
 /* 
 E: {
-  ENABLED: ENABLED,
-  DISABLED: DISABLED
+  ENABLED: 'ENABLED',
+  DISABLED: 'DISABLED'
 }
 
 map: {
