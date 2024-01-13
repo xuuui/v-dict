@@ -6,7 +6,7 @@
  */
 
 import type { O } from 'ts-toolbelt'
-import type { Except, Simplify, ValueOf } from 'type-fest'
+import type { Simplify, ValueOf } from 'type-fest'
 
 import type { createPromise } from './create-promise'
 
@@ -25,25 +25,32 @@ export type DictItem = {
   value: string
 }
 
-export type DictItemRecord = Simplify<DictItem & Recordable>
+export type DictItemRecord = {
+  label: string
+  value: string
+} & Recordable
 
 export type DictMap = Map<string, DictItemRecord>
 
-export type Fetch = (code: string, ctx: any) => Promise<DictItemRecord[]>
+export type Fetch = (code: string, options: any) => Promise<DictItemRecord[]>
 
 export interface CreateDictManager<E extends ExtraGetter> {
   fetch?: Fetch
   extra?: E
 }
 
-export type ExtraGetter<D extends Dict<string> = Dict<string>> = (
-  dict: Except<D, 'load'>
-) => Recordable
+export type ExtraGetter<D extends Dict<string> = Dict<string>> = (dict: D) => Recordable
 
 export type UseDictOptions = {
   clone?: boolean
   immediate?: boolean
 } & Recordable
+
+type ExtractFetchOptions<F extends Fetch> = Parameters<F>[1] extends infer T
+  ? T extends undefined
+    ? {}
+    : T
+  : never
 
 export interface DefineDict<Extra extends ExtraGetter> {
   <R extends boolean, F extends Fetch, D extends Recordable<Recordable>, E extends ExtraGetter>(
@@ -55,22 +62,22 @@ export interface DefineDict<Extra extends ExtraGetter> {
       extra?: E
     }>
   ): (
-    options?: UseDictOptions & GetFetchCtx<F>
-  ) => CreateDict<D, F> & ReturnType<Extra> & ReturnType<E>
+    options?: Simplify<UseDictOptions & ExtractFetchOptions<F>>
+  ) => Simplify<CreateDict<D, F> & ReturnType<Extra> & ReturnType<E>>
 }
-
-type GetFetchCtx<F extends Fetch> = Parameters<F>[1] extends undefined ? {} : Parameters<F>[1]
 
 type CreateDict<D extends Recordable<Recordable>, F extends Fetch> = Dict<
   keyof D,
   O.Merge<UnwrapArray<Awaited<ReturnType<F>>>, ValueOf<D>>,
-  UseDictOptions & GetFetchCtx<F>
+  UseDictOptions & ExtractFetchOptions<F>
 >
+
+export type LoadPromise = ReturnType<typeof createPromise<void>>
 
 export type Dict<
   Key extends PropertyKey = PropertyKey,
   ExtraItem extends Recordable = Recordable,
-  Ctx = any
+  Options = Recordable
 > = {
   list: Simplify<DictItem & ExtraItem>[]
   E: {
@@ -79,8 +86,6 @@ export type Dict<
   map: {
     [K in Key]: Simplify<DictItem & ExtraItem>
   } & Recordable<Simplify<DictItem & ExtraItem>>
-  loadPromise: Promise<void>
-  load: (ctx: Ctx) => Promise<void>
+  loadPromise: LoadPromise
+  load: (options: Options) => LoadPromise
 }
-
-export type LoadPromise = ReturnType<typeof createPromise<void>>

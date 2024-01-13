@@ -21,21 +21,21 @@ export function createDictManager<E extends ExtraGetter>(
 
   const maps = reactive<Recordable<DictMap>>({})
 
-  const defineDict = ((code, options) => {
+  const defineDict = ((code, defineDictOptions) => {
     const {
       data = {},
       remote = false,
       fetch = managerFetch,
       extra
-    } = (isFunction(options) ? options() : options) ?? {}
+    } = (isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions) ?? {}
 
-    const managerLoadPromise = shallowRef<LoadPromise | null>(null)
+    const managerLoadPromise = shallowRef<LoadPromise>(createPromise())
     maps[code] = new Map()
 
-    async function loadDict(ctx: any, mapRef: Ref<DictMap>) {
+    async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
       const dataMap = toMap(cloneDeep(data))
       if (remote) {
-        await fetch?.(code, ctx).then((res) => {
+        await fetch?.(code, options).then((res) => {
           mapRef.value = toMap(res ?? [])
           dataMap.forEach((value, key) => {
             if (mapRef.value.has(key)) {
@@ -53,7 +53,7 @@ export function createDictManager<E extends ExtraGetter>(
 
       const { clone, immediate } = useDictOptions
 
-      const loadPromise = !clone ? managerLoadPromise : shallowRef<LoadPromise | null>(null)
+      const loadPromise = !clone ? managerLoadPromise : shallowRef<LoadPromise>(createPromise())
 
       const mapRef = !clone ? toRef(maps, code) : ref<DictMap>(new Map())
       const objRef = ref<Recordable<DictItemRecord>>({})
@@ -82,10 +82,10 @@ export function createDictManager<E extends ExtraGetter>(
         load()
       }
 
-      function load(ctx?: Recordable) {
+      function load(options?: Recordable) {
         loadPromise.value = createPromise()
 
-        loadDict(merge({}, useDictOptions, ctx), mapRef).then(() => {
+        loadDict(merge({}, useDictOptions, options), mapRef).then(() => {
           loadPromise.value?.resolve()
         })
 
@@ -96,15 +96,15 @@ export function createDictManager<E extends ExtraGetter>(
         map: objRef,
         list: listRef,
         E,
-        loadPromise
+        loadPromise,
+        load
       }
       const reactiveCtx = reactive(ctx)
 
       return reactive({
         ...ctx,
-        load,
-        ...managerExtra?.(reactiveCtx as any),
-        ...extra?.(reactiveCtx as any)
+        ...managerExtra?.(reactiveCtx),
+        ...extra?.(reactiveCtx)
       })
     }
   }) as DefineDict<E>

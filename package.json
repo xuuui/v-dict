@@ -1,6 +1,6 @@
 {
   "name": "v-dict",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "type": "module",
   "description": "vue3 dict manager",
   "main": "dist/index.js",
