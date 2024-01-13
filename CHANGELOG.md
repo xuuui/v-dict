@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.0.4
+
+### Patch Changes
+
+- 修复 load 参数类型
+
 ## 1.0.3
 
 ### Patch Changes

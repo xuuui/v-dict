@@ -32,7 +32,7 @@ export type DictItemRecord = {
 
 export type DictMap = Map<string, DictItemRecord>
 
-export type Fetch = (code: string, options: any) => Promise<DictItemRecord[]>
+export type Fetch = (code: string, options?: any) => Promise<DictItemRecord[]>
 
 export interface CreateDictManager<E extends ExtraGetter> {
   fetch?: Fetch
@@ -87,5 +87,5 @@ export type Dict<
     [K in Key]: Simplify<DictItem & ExtraItem>
   } & Recordable<Simplify<DictItem & ExtraItem>>
   loadPromise: LoadPromise
-  load: (options: Options) => LoadPromise
+  load: (options?: Options) => LoadPromise
 }
