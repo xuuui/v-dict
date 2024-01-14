@@ -78,8 +78,8 @@ export const useRemoteStatusDict = dm.defineDict('REMOTE_STATUS', {
     {{ statusDict.E }}
     {{ statusDict.map }}
     {{ statusDict.list }}
-    {{ statusDict.getLabel(E.ENABLED) }}
-    {{ statusDict.getItem(E.DISABLED) }}
+    {{ statusDict.getLabel(statusDict.E.ENABLED) }}
+    {{ statusDict.getItem(statusDict.E.DISABLED) }}
   </div>
 </template>
 

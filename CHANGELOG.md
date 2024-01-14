@@ -1,5 +1,17 @@
 # v-dict
 
+## 1.0.7
+
+### Patch Changes
+
+- updpate doc
+
+## 1.0.6
+
+### Patch Changes
+
+- 依赖修改
+
 ## 1.0.5
 
 ### Patch Changes
