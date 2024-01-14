@@ -1,8 +1,12 @@
 {
   "name": "v-dict",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "description": "Vue3 Dict Manager",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xuuui/v-dict"
+  },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "typings": "dist/index.d.ts",
@@ -27,7 +31,7 @@
     "changeset:release": "pnpm build && pnpm changeset:release:only"
   },
   "keywords": [
-    "vue",
+    "vue3",
     "dict"
   ],
   "author": "",

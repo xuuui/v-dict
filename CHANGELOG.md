@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.0.5
+
+### Patch Changes
+
+- add git link
+
 ## 1.0.4
 
 ### Patch Changes
