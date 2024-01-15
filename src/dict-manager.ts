@@ -49,7 +49,7 @@ export function createDictManager<E extends ExtraGetter>(
     }
 
     return (useDictOptions) => {
-      useDictOptions = merge({ clone: false, immediate: false }, useDictOptions)
+      useDictOptions = merge({ clone: false, immediate: true }, useDictOptions)
 
       const { clone, immediate } = useDictOptions
 

@@ -1,6 +1,6 @@
 {
   "name": "v-dict",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "description": "Vue3 Dict Manager",
   "repository": {

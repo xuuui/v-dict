@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.0.8
+
+### Patch Changes
+
+- immediate 默认为 true
+
 ## 1.0.7
 
 ### Patch Changes
