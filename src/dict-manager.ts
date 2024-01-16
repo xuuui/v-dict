@@ -35,13 +35,12 @@ export function createDictManager<E extends ExtraGetter>(
     async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
       const dataMap = toMap(cloneDeep(data))
       if (remote) {
-        await fetch?.(code, options).then((res) => {
-          mapRef.value = toMap(res ?? [])
-          dataMap.forEach((value, key) => {
-            if (mapRef.value.has(key)) {
-              merge(mapRef.value.get(key), value)
-            }
-          })
+        const res = await fetch?.(code, options)
+        mapRef.value = toMap(res ?? [])
+        dataMap.forEach((value, key) => {
+          if (mapRef.value.has(key)) {
+            merge(mapRef.value.get(key), value)
+          }
         })
       } else {
         mapRef.value = dataMap
@@ -83,10 +82,11 @@ export function createDictManager<E extends ExtraGetter>(
       }
 
       function load(options?: Recordable) {
+        const oldP = loadPromise.value
         loadPromise.value = createPromise()
-
         loadDict(merge({}, useDictOptions, options), mapRef).then(() => {
-          loadPromise.value?.resolve()
+          oldP.resolve()
+          loadPromise.value.resolve()
         })
 
         return loadPromise.value

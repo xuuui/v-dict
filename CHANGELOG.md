@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.0.9
+
+### Patch Changes
+
+- 修复 promise 未触发
+
 ## 1.0.8
 
 ### Patch Changes
