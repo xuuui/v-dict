@@ -9,7 +9,7 @@ import type { WritableDeep } from 'type-fest'
 
 import type { DictItemRecord, DictMap, Recordable } from './type'
 
-const clearObj = (obj: Recordable) => {
+export function clearObj(obj: Recordable) {
   for (const key of Object.keys(obj)) {
     delete obj[key]
   }

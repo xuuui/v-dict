@@ -68,6 +68,11 @@ export const useRemoteStatusDict = dm.defineDict('REMOTE_STATUS', {
   }
 })
 
+// clear dict data
+// dm.clear('REMOTE_STATUS')
+
+// clear all dict data
+// dm.clear()
 ```
 
 ### xx.vue
@@ -91,7 +96,9 @@ const statusDict = useRemoteStatusDict({
   // Data sharing by default, independent data source when clone is true
   clone: true,
   // Whether the remote dictionary loads data immediately
-  immediate: false
+  immediate: false,
+  // whether to reload
+  refresh: false
 }) // statusDict is reactive!!!
 
 const { E, map, list } = statusDict
@@ -135,6 +142,8 @@ onMounted(async () => {
   await statusDict.loadPromise // immediate = true, using loadPromise to wait load
   // do after dict load
   console.log(statusDict.list)
+  // clear dict data
+  // statusDict.clear()
 })
 </script>
 ```

@@ -1,5 +1,17 @@
 # v-dict
 
+## 1.1.1
+
+### Patch Changes
+
+- 优化逻辑
+
+## 1.1.0
+
+### Minor Changes
+
+- 增加是否刷新选项和清除字典数据方法
+
 ## 1.0.9
 
 ### Patch Changes

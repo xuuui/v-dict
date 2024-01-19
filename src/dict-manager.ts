@@ -12,7 +12,7 @@ import type {
   LoadPromise,
   Recordable
 } from './type'
-import { mapToList, mapToObj, toMap } from './util'
+import { clearObj, mapToList, mapToObj, toMap } from './util'
 
 export function createDictManager<E extends ExtraGetter>(
   managerOptions: CreateDictManager<E> = {}
@@ -20,6 +20,15 @@ export function createDictManager<E extends ExtraGetter>(
   const { fetch: managerFetch, extra: managerExtra } = managerOptions
 
   const maps = reactive<Recordable<DictMap>>({})
+
+  function clear(code?: string) {
+    if (code) {
+      const dictMap = maps[code]
+      dictMap && dictMap.clear()
+      return
+    }
+    clearObj(maps)
+  }
 
   const defineDict = ((code, defineDictOptions) => {
     const {
@@ -29,14 +38,15 @@ export function createDictManager<E extends ExtraGetter>(
       extra
     } = (isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions) ?? {}
 
+    let managerLoaded = false
     const managerLoadPromise = shallowRef<LoadPromise>(createPromise())
     maps[code] = new Map()
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
       const dataMap = toMap(cloneDeep(data))
       if (remote) {
-        const res = await fetch?.(code, options)
-        mapRef.value = toMap(res ?? [])
+        const res = (await fetch?.(code, options)) ?? []
+        mapRef.value = toMap(res)
         dataMap.forEach((value, key) => {
           if (mapRef.value.has(key)) {
             merge(mapRef.value.get(key), value)
@@ -45,13 +55,15 @@ export function createDictManager<E extends ExtraGetter>(
       } else {
         mapRef.value = dataMap
       }
+      managerLoaded = true
     }
 
     return (useDictOptions) => {
-      useDictOptions = merge({ clone: false, immediate: true }, useDictOptions)
+      useDictOptions = merge({ clone: false, immediate: true, refresh: false }, useDictOptions)
 
-      const { clone, immediate } = useDictOptions
+      const { clone, immediate, refresh } = useDictOptions
 
+      let loaded = !clone ? managerLoaded : false
       const loadPromise = !clone ? managerLoadPromise : shallowRef<LoadPromise>(createPromise())
 
       const mapRef = !clone ? toRef(maps, code) : ref<DictMap>(new Map())
@@ -75,21 +87,26 @@ export function createDictManager<E extends ExtraGetter>(
         return result
       })
 
-      if (remote) {
-        immediate && load()
-      } else {
-        load()
+      if (!remote || immediate) {
+        if (!loaded || refresh) {
+          load()
+        }
       }
 
       function load(options?: Recordable) {
-        const oldP = loadPromise.value
+        const oldLoadPromise = loadPromise.value
         loadPromise.value = createPromise()
+
         loadDict(merge({}, useDictOptions, options), mapRef).then(() => {
-          oldP.resolve()
+          oldLoadPromise.resolve()
           loadPromise.value.resolve()
         })
 
         return loadPromise.value
+      }
+
+      function _clear() {
+        mapRef.value.clear()
       }
 
       const ctx = {
@@ -97,7 +114,8 @@ export function createDictManager<E extends ExtraGetter>(
         list: listRef,
         E,
         loadPromise,
-        load
+        load,
+        clear: _clear
       }
       const reactiveCtx = reactive(ctx)
 
@@ -109,5 +127,5 @@ export function createDictManager<E extends ExtraGetter>(
     }
   }) as DefineDict<E>
 
-  return { defineDict }
+  return { defineDict, clear }
 }

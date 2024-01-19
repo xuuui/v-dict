@@ -44,6 +44,7 @@ export type ExtraGetter<D extends Dict<string> = Dict<string>> = (dict: D) => Re
 export type UseDictOptions = {
   clone?: boolean
   immediate?: boolean
+  refresh?: boolean
 } & Recordable
 
 type ExtractFetchOptions<F extends Fetch> = Parameters<F>[1] extends infer T
@@ -88,4 +89,5 @@ export type Dict<
   } & Recordable<Simplify<DictItem & ExtraItem>>
   loadPromise: LoadPromise
   load: (options?: Options) => LoadPromise
+  clear: () => void
 }
