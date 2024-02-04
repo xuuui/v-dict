@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.1.2
+
+### Patch Changes
+
+- 优化全局和克隆加载逻辑
+
 ## 1.1.1
 
 ### Patch Changes

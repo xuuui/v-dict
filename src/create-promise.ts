@@ -13,6 +13,7 @@ export type Reject = (reason?: any) => void
 export type CreatePromiseReturn<T> = Promise<T> & {
   resolve: Resolve<T>
   reject: Reject
+  isPending: boolean
 }
 
 export function createPromise<T = any>(
@@ -29,6 +30,10 @@ export function createPromise<T = any>(
 
   promise.resolve = resolve
   promise.reject = reject
+  promise.isPending = true
+  promise.finally(() => {
+    promise.isPending = false
+  })
 
   return promise
 }

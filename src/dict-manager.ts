@@ -1,4 +1,4 @@
-import { computed, reactive, ref, type Ref, shallowRef, toRef, watch } from 'vue'
+import { computed, reactive, ref, type Ref, shallowRef, type ShallowRef, toRef, watch } from 'vue'
 
 import { cloneDeep, isFunction, merge } from 'lodash-es'
 
@@ -38,8 +38,7 @@ export function createDictManager<E extends ExtraGetter>(
       extra
     } = (isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions) ?? {}
 
-    let managerLoaded = false
-    const managerLoadPromise = shallowRef<LoadPromise>(createPromise())
+    const globalLoadPromise = shallowRef<LoadPromise | null>(null)
     maps[code] = new Map()
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
@@ -55,7 +54,6 @@ export function createDictManager<E extends ExtraGetter>(
       } else {
         mapRef.value = dataMap
       }
-      managerLoaded = true
     }
 
     return (useDictOptions) => {
@@ -63,8 +61,7 @@ export function createDictManager<E extends ExtraGetter>(
 
       const { clone, immediate, refresh } = useDictOptions
 
-      let loaded = !clone ? managerLoaded : false
-      const loadPromise = !clone ? managerLoadPromise : shallowRef<LoadPromise>(createPromise())
+      const loadPromise = !clone ? globalLoadPromise : shallowRef<LoadPromise>(createPromise())
 
       const mapRef = !clone ? toRef(maps, code) : ref<DictMap>(new Map())
       const objRef = ref<Recordable<DictItemRecord>>({})
@@ -88,8 +85,21 @@ export function createDictManager<E extends ExtraGetter>(
       })
 
       if (!remote || immediate) {
-        if (!loaded || refresh) {
+        if (clone) {
           load()
+        } else {
+          if (!globalLoadPromise.value) {
+            globalLoadPromise.value = createPromise()
+            load()
+          } else {
+            globalLoadPromise.value.then(() => {
+              refresh && load()
+            })
+          }
+        }
+      } else {
+        if (!globalLoadPromise.value) {
+          globalLoadPromise.value = createPromise()
         }
       }
 
@@ -98,8 +108,8 @@ export function createDictManager<E extends ExtraGetter>(
         loadPromise.value = createPromise()
 
         loadDict(merge({}, useDictOptions, options), mapRef).then(() => {
-          oldLoadPromise.resolve()
-          loadPromise.value.resolve()
+          oldLoadPromise!.resolve()
+          loadPromise.value!.resolve()
         })
 
         return loadPromise.value
@@ -113,7 +123,7 @@ export function createDictManager<E extends ExtraGetter>(
         map: objRef,
         list: listRef,
         E,
-        loadPromise,
+        loadPromise: loadPromise as ShallowRef<LoadPromise>,
         load,
         clear: _clear
       }
