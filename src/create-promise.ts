@@ -4,6 +4,7 @@
  * @LastEditors: fangruiyi
  * @Description:
  */
+
 const noop = () => {}
 
 export type Resolve<T> = (value: T | PromiseLike<T>) => void

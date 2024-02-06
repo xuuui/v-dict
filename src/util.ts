@@ -25,11 +25,12 @@ export function mapToObj(map: DictMap, obj: Recordable<DictItemRecord> = {}) {
 
 export function objToMap(obj: Recordable<DictItemRecord>) {
   const map: DictMap = new Map()
-  for (const [key, value] of Object.entries(obj)) {
-    if (isUndefined(value.value)) {
-      value.value = key
+  for (const key of Object.keys(obj)) {
+    const item = obj[key]
+    if (isUndefined(item.value)) {
+      item.value = key
     }
-    map.set(key, value)
+    map.set(key, item)
   }
   return map
 }

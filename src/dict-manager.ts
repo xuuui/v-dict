@@ -10,39 +10,52 @@ import type {
   DictMap,
   ExtraGetter,
   LoadPromise,
-  Recordable
+  Recordable,
+  UseDictOptions
 } from './type'
 import { clearObj, mapToList, mapToObj, toMap } from './util'
+
+const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
 
 export function createDictManager<E extends ExtraGetter>(
   managerOptions: CreateDictManager<E> = {}
 ) {
   const { fetch: managerFetch, extra: managerExtra } = managerOptions
 
-  const maps = reactive<Recordable<DictMap>>({})
+  const maps = reactive<Recordable<DictMap>>(Object.create(null))
+  const defineDictOptionsMap = new Map<string, Recordable>()
 
   function clear(code?: string) {
     if (code) {
-      const dictMap = maps[code]
-      dictMap && dictMap.clear()
+      maps[code]?.clear()
       return
     }
     clearObj(maps)
   }
 
-  const defineDict = ((code, defineDictOptions) => {
-    const {
-      data = {},
-      remote = false,
-      fetch = managerFetch,
-      extra
-    } = (isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions) ?? {}
+  function _defineDict(
+    internalOptions: { pickKeys?: string[]; omitKeys?: string[] },
+    code: string,
+    defineDictOptions: Parameters<DefineDict<E>>[1]
+  ) {
+    if (maps[code]) {
+      warn(`code "${code}" already exists`)
+    }
+    const { pickKeys, omitKeys } = internalOptions
+
+    const options: Parameters<DefineDict<E>>[1] = Object.assign(
+      { data: {}, remote: false, fetch: managerFetch },
+      isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions
+    )
+    defineDictOptionsMap.set(code, options)
+
+    const { data, remote, fetch, extra } = options
 
     const globalLoadPromise = shallowRef<LoadPromise | null>(null)
     maps[code] = new Map()
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
-      const dataMap = toMap(cloneDeep(data))
+      const dataMap = toMap(cloneDeep(data as any))
       if (remote) {
         const res = (await fetch?.(code, options)) ?? []
         mapRef.value = toMap(res)
@@ -56,33 +69,19 @@ export function createDictManager<E extends ExtraGetter>(
       }
     }
 
-    return (useDictOptions) => {
-      useDictOptions = merge({ clone: false, immediate: true, refresh: false }, useDictOptions)
+    function useDict(useDictOptions: UseDictOptions) {
+      useDictOptions = Object.assign(
+        { clone: false, immediate: true, refresh: false },
+        useDictOptions
+      )
 
       const { clone, immediate, refresh } = useDictOptions
 
       const loadPromise = !clone ? globalLoadPromise : shallowRef<LoadPromise>(createPromise())
-
       const mapRef = !clone ? toRef(maps, code) : ref<DictMap>(new Map())
-      const objRef = ref<Recordable<DictItemRecord>>({})
+
+      const objRef = ref<Recordable<DictItemRecord>>(Object.create(null))
       const listRef = ref<DictItemRecord[]>([])
-
-      watch(
-        mapRef,
-        (newValue) => {
-          mapToObj(newValue, objRef.value)
-          mapToList(newValue, listRef.value)
-        },
-        { deep: true, immediate: true }
-      )
-
-      const E = computed(() => {
-        const result: Recordable<string> = {}
-        for (const key of mapRef.value.keys()) {
-          result[key] = key
-        }
-        return result
-      })
 
       if (!remote || immediate) {
         if (clone) {
@@ -107,7 +106,7 @@ export function createDictManager<E extends ExtraGetter>(
         const oldLoadPromise = loadPromise.value
         loadPromise.value = createPromise()
 
-        loadDict(merge({}, useDictOptions, options), mapRef).then(() => {
+        loadDict(Object.assign({}, useDictOptions, options), mapRef).then(() => {
           oldLoadPromise!.resolve()
           loadPromise.value!.resolve()
         })
@@ -118,6 +117,23 @@ export function createDictManager<E extends ExtraGetter>(
       function _clear() {
         mapRef.value.clear()
       }
+
+      watch(
+        mapRef,
+        (newValue) => {
+          mapToObj(newValue, objRef.value)
+          mapToList(newValue, listRef.value)
+        },
+        { deep: true, immediate: true }
+      )
+
+      const E = computed(() => {
+        const result: Recordable<string> = {}
+        for (const key of mapRef.value.keys()) {
+          result[key] = key
+        }
+        return result
+      })
 
       const ctx = {
         map: objRef,
@@ -135,7 +151,26 @@ export function createDictManager<E extends ExtraGetter>(
         ...extra?.(reactiveCtx)
       })
     }
-  }) as DefineDict<E>
+
+    const dictCode = code
+
+    useDict.extend = (
+      code: string,
+      extendOptions?: {
+        pickKeys?: string[]
+        omitKeys?: string[]
+      }
+    ) => {
+      const { pickKeys, omitKeys } = extendOptions ?? {}
+      // @ts-ignore
+      const options = defineDictOptionsMap.get(dictCode)
+      return _defineDict.bind(null, { pickKeys, omitKeys }, code, options)
+    }
+
+    return useDict
+  }
+
+  const defineDict = _defineDict.bind(null, {}) as DefineDict<E>
 
   return { defineDict, clear }
 }
