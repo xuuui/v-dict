@@ -10,9 +10,8 @@ import type {
   DictMap,
   ExtraGetter,
   LoadPromise,
-  Recordable,
   UseDictOptions
-} from './type'
+} from './types'
 import { clearObj, mapToList, mapToObj, toMap } from './util'
 
 const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
@@ -34,14 +33,14 @@ export function createDictManager<E extends ExtraGetter>(
   }
 
   function _defineDict(
-    internalOptions: { pickKeys?: string[]; omitKeys?: string[] },
+    internalOptions: { pickValues?: string[]; omitValues?: string[] },
     code: string,
     defineDictOptions: Parameters<DefineDict<E>>[1]
   ) {
     if (maps[code]) {
       warn(`code "${code}" already exists`)
     }
-    const { pickKeys, omitKeys } = internalOptions
+    const { pickValues, omitValues } = internalOptions
 
     const options: Parameters<DefineDict<E>>[1] = Object.assign(
       { data: {}, remote: false, fetch: managerFetch },
@@ -55,10 +54,10 @@ export function createDictManager<E extends ExtraGetter>(
     maps[code] = new Map()
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
-      const dataMap = toMap(cloneDeep(data as any))
+      const dataMap = toMap(cloneDeep(data as any), { pickValues, omitValues })
       if (remote) {
         const res = (await fetch?.(code, options)) ?? []
-        mapRef.value = toMap(res)
+        mapRef.value = toMap(res, { pickValues, omitValues })
         dataMap.forEach((value, key) => {
           if (mapRef.value.has(key)) {
             merge(mapRef.value.get(key), value)
@@ -157,20 +156,59 @@ export function createDictManager<E extends ExtraGetter>(
     useDict.extend = (
       code: string,
       extendOptions?: {
-        pickKeys?: string[]
-        omitKeys?: string[]
+        pickValues?: string[]
+        omitValues?: string[]
       }
     ) => {
-      const { pickKeys, omitKeys } = extendOptions ?? {}
-      // @ts-ignore
+      const { pickValues, omitValues } = extendOptions ?? {}
       const options = defineDictOptionsMap.get(dictCode)
-      return _defineDict.bind(null, { pickKeys, omitKeys }, code, options)
+      return _defineDict.bind(null, { pickValues, omitValues }, code, options)
     }
 
     return useDict
   }
 
-  const defineDict = _defineDict.bind(null, {}) as DefineDict<E>
+  const defineDict = _defineDict.bind(null, {}) as unknown as DefineDict<E>
 
   return { defineDict, clear }
 }
+
+// const dm = createDictManager({
+//   fetch: () => {
+//     return []
+//   },
+//   extra: () => {
+//     return {
+//       msg: 'hello'
+//     }
+//   }
+// })
+
+// const useDict = dm.defineDict('TEST', {
+//   data: {
+//     YES: {
+//       label: 'YES'
+//     },
+//     NO: {
+//       label: 'NO'
+//     }
+//   },
+//   fetch: async (_: string, { x }: { x: number }) => {
+//     return [{ label: '3', value: 's', h: 4 }] as Array<{
+//       label: string
+//       value: string
+//       h?: number
+//     }>
+//   },
+//   extra: () => {
+//     return {
+//       self: 'x'
+//     }
+//   }
+// })
+
+// const useX = useDict.extend('codex', {
+//   omitValues: ['YES']
+// })
+
+// const dict = useX()

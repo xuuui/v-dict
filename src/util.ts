@@ -4,10 +4,10 @@
  * @LastEditors: fangruiyi
  * @Description:
  */
-import { isArray, isUndefined } from 'lodash-es'
-import type { WritableDeep } from 'type-fest'
 
-import type { DictItemRecord, DictMap, Recordable } from './type'
+import { isArray, isUndefined, omit, pick } from 'lodash-es'
+
+import type { DictItemRecord, DictMap } from './types'
 
 export function clearObj(obj: Recordable) {
   for (const key of Object.keys(obj)) {
@@ -49,13 +49,32 @@ export function listToMap(list: DictItemRecord[]) {
   return map
 }
 
-export function toMap(data: Recordable<DictItemRecord> | DictItemRecord[]) {
-  return isArray(data) ? listToMap(data) : objToMap(data)
+export function toMap(
+  data: Recordable<DictItemRecord> | DictItemRecord[],
+  {
+    pickValues,
+    omitValues
+  }: {
+    pickValues?: string[]
+    omitValues?: string[]
+  } = {}
+) {
+  if (isArray(data)) {
+    if (pickValues?.length) {
+      data = data.filter((item) => pickValues.includes(item.value))
+    }
+    if (omitValues?.length) {
+      data = data.filter((item) => !omitValues.includes(item.value))
+    }
+    return listToMap(data)
+  }
+  if (pickValues?.length) {
+    data = pick(data, ...pickValues)
+  }
+  if (omitValues?.length) {
+    data = omit(data, ...omitValues)
+  }
+  return objToMap(data)
 }
 
-export const defineDictData = <
-  const T extends { label: string } & Recordable,
-  const K extends string
->(
-  data: Record<K, T>
-): Record<K, WritableDeep<T>> => data as any
+export const defineDictData = <T>(data: T): T => data

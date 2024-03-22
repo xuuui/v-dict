@@ -4,6 +4,7 @@
  * @LastEditors: fangruiyi
  * @Description:
  */
-export type * from './type'
+
+export type * from './types'
 export * from './dict-manager'
 export { defineDictData } from './util'

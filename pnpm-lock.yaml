@@ -11,9 +11,6 @@ dependencies:
   lodash-es:
     specifier: ^4.17.21
     version: 4.17.21
-  ts-toolbelt:
-    specifier: ^9.6.0
-    version: 9.6.0
   type-fest:
     specifier: ^4.9.0
     version: 4.9.0
@@ -27,13 +24,13 @@ devDependencies:
     version: 20.11.0
   tsup:
     specifier: ^8.0.1
-    version: 8.0.1(typescript@5.3.3)
+    version: 8.0.1(typescript@5.4.3)
   typescript:
-    specifier: ^5.3.3
-    version: 5.3.3
+    specifier: ^5.4.0
+    version: 5.4.3
   vue:
     specifier: ^3.4.10
-    version: 3.4.10(typescript@5.3.3)
+    version: 3.4.10(typescript@5.4.3)
 
 packages:
 
@@ -779,7 +776,7 @@ packages:
     dependencies:
       '@vue/compiler-ssr': 3.4.10
       '@vue/shared': 3.4.10
-      vue: 3.4.10(typescript@5.3.3)
+      vue: 3.4.10(typescript@5.4.3)
     dev: true
 
   /@vue/shared@3.4.10:
@@ -2650,11 +2647,7 @@ packages:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
     dev: true
 
-  /ts-toolbelt@9.6.0:
-    resolution: {integrity: sha512-nsZd8ZeNUzukXPlJmTBwUAuABDe/9qtVDelJeT/qW0ow3ZS3BsQJtNkan1802aM9Uf68/Y8ljw86Hu0h5IUW3w==}
-    dev: false
-
-  /tsup@8.0.1(typescript@5.3.3):
+  /tsup@8.0.1(typescript@5.4.3):
     resolution: {integrity: sha512-hvW7gUSG96j53ZTSlT4j/KL0q1Q2l6TqGBFc6/mu/L46IoNWqLLUzLRLP1R8Q7xrJTmkDxxDoojV5uCVs1sVOg==}
     engines: {node: '>=18'}
     hasBin: true
@@ -2687,7 +2680,7 @@ packages:
       source-map: 0.8.0-beta.0
       sucrase: 3.35.0
       tree-kill: 1.2.2
-      typescript: 5.3.3
+      typescript: 5.4.3
     transitivePeerDependencies:
       - supports-color
       - ts-node
@@ -2765,8 +2758,8 @@ packages:
       is-typed-array: 1.1.12
     dev: true
 
-  /typescript@5.3.3:
-    resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
+  /typescript@5.4.3:
+    resolution: {integrity: sha512-KrPd3PKaCLr78MalgiwJnA25Nm8HAmdwN3mYUYZgG/wizIo9EainNVQI9/yDavtVFRN2h3k8uf3GLHuhDMgEHg==}
     engines: {node: '>=14.17'}
     hasBin: true
     dev: true
@@ -2796,7 +2789,7 @@ packages:
       spdx-expression-parse: 3.0.1
     dev: true
 
-  /vue@3.4.10(typescript@5.3.3):
+  /vue@3.4.10(typescript@5.4.3):
     resolution: {integrity: sha512-c+O8qGqdWPF9joTCzMGeDDedViooh6c8RY3+eW5+6GCAIY8YjChmU06LsUu0PnMZbIk1oKUoJTqKzmghYtFypw==}
     peerDependencies:
       typescript: '*'
@@ -2809,7 +2802,7 @@ packages:
       '@vue/runtime-dom': 3.4.10
       '@vue/server-renderer': 3.4.10(vue@3.4.10)
       '@vue/shared': 3.4.10
-      typescript: 5.3.3
+      typescript: 5.4.3
     dev: true
 
   /wcwidth@1.0.1:
