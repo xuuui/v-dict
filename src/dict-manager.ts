@@ -134,12 +134,17 @@ export function createDictManager<E extends ExtraGetter>(
         return result
       })
 
+      function getItem(value?: string | null) {
+        return value ? objRef.value[value] : null
+      }
+
       const ctx = {
         map: objRef,
         list: listRef,
         E,
         loadPromise: loadPromise as ShallowRef<LoadPromise>,
         load,
+        getItem,
         clear: _clear
       }
       const reactiveCtx = reactive(ctx)
@@ -173,42 +178,26 @@ export function createDictManager<E extends ExtraGetter>(
   return { defineDict, clear }
 }
 
-// const dm = createDictManager({
-//   fetch: () => {
-//     return []
-//   },
-//   extra: () => {
-//     return {
-//       msg: 'hello'
-//     }
-//   }
-// })
+const dm = createDictManager({
+  fetch: () => {
+    return [] as Array<{ label: string; value: string }>
+  }
+})
 
-// const useDict = dm.defineDict('TEST', {
-//   data: {
-//     YES: {
-//       label: 'YES'
-//     },
-//     NO: {
-//       label: 'NO'
-//     }
-//   },
+// const useTestDict = dm.defineDict('TEST', {
+//   remote: true,
 //   fetch: async (_: string, { x }: { x: number }) => {
 //     return [{ label: '3', value: 's', h: 4 }] as Array<{
 //       label: string
 //       value: string
 //       h?: number
+//       [x: string]: any
 //     }>
-//   },
-//   extra: () => {
-//     return {
-//       self: 'x'
-//     }
 //   }
 // })
 
-// const useX = useDict.extend('codex', {
-//   omitValues: ['YES']
+// const useX = useTestDict.extend('codex', {
+//   pickValues: ['X']
 // })
 
 // const dict = useX()

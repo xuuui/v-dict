@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.2.1
+
+### Patch Changes
+
+- add getItem method
+
 ## 1.2.0
 
 ### Minor Changes

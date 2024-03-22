@@ -115,4 +115,5 @@ export type Dict<
   loadPromise: LoadPromise
   load: (options?: Options) => LoadPromise
   clear: () => void
+  getItem: (value?: string | null) => Simplify<{ value: string } & Item> | null
 }
