@@ -33,20 +33,21 @@ export function createDictManager<E extends ExtraGetter>(
   }
 
   function _defineDict(
-    internalOptions: { pickValues?: string[]; omitValues?: string[] },
+    internalOptions: { pickValues?: string[]; omitValues?: string[]; extendCode?: string },
     code: string,
     defineDictOptions: Parameters<DefineDict<E>>[1]
   ) {
+    const { pickValues, omitValues, extendCode } = internalOptions
+
     if (maps[code]) {
       warn(`code "${code}" already exists`)
     }
-    const { pickValues, omitValues } = internalOptions
 
     const options: Parameters<DefineDict<E>>[1] = Object.assign(
       { data: {}, remote: false, fetch: managerFetch },
       isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions
     )
-    defineDictOptionsMap.set(code, options)
+    defineDictOptionsMap.set(code, cloneDeep(options))
 
     const { data, remote, fetch, extra } = options
 
@@ -56,7 +57,7 @@ export function createDictManager<E extends ExtraGetter>(
     async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
       const dataMap = toMap(cloneDeep(data as any), { pickValues, omitValues })
       if (remote) {
-        const res = (await fetch?.(code, options)) ?? []
+        const res = (await fetch?.(extendCode ?? code, options)) ?? []
         mapRef.value = toMap(res, { pickValues, omitValues })
         dataMap.forEach((value, key) => {
           if (mapRef.value.has(key)) {
@@ -156,18 +157,16 @@ export function createDictManager<E extends ExtraGetter>(
       })
     }
 
-    const dictCode = code
-
     useDict.extend = (
-      code: string,
+      extendCode: string,
       extendOptions?: {
         pickValues?: string[]
         omitValues?: string[]
       }
     ) => {
       const { pickValues, omitValues } = extendOptions ?? {}
-      const options = defineDictOptionsMap.get(dictCode)
-      return _defineDict.bind(null, { pickValues, omitValues }, code, options)
+      const options = defineDictOptionsMap.get(code)
+      return _defineDict({ pickValues, omitValues, extendCode: code }, extendCode, options)
     }
 
     return useDict
@@ -178,11 +177,11 @@ export function createDictManager<E extends ExtraGetter>(
   return { defineDict, clear }
 }
 
-const dm = createDictManager({
-  fetch: () => {
-    return [] as Array<{ label: string; value: string }>
-  }
-})
+// const dm = createDictManager({
+//   fetch: () => {
+//     return [] as Array<{ label: string; value: string }>
+//   }
+// })
 
 // const useTestDict = dm.defineDict('TEST', {
 //   remote: true,

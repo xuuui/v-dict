@@ -67,7 +67,7 @@ type UseDict<
   F extends Fetch
 > = _UseDict<ME, E, D, F> & {
   extend: (
-    code: string,
+    extendCode: string,
     extendOptions?: {
       pickValues?: Simplify<keyof D>[]
       omitValues?: Simplify<keyof D>[]
