@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.2.3
+
+### Patch Changes
+
+- add type tool
+
 ## 1.2.2
 
 ### Patch Changes

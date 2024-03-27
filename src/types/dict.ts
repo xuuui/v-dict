@@ -60,7 +60,7 @@ type _UseDict<
   options?: Simplify<UseDictOptions & ExtractFetchOptions<F>>
 ) => Simplify<CreateDict<D, F> & ReturnType<ME> & ReturnType<E>>
 
-type UseDict<
+export type UseDict<
   ME extends ExtraGetter,
   E extends ExtraGetter,
   D extends Recordable,
@@ -117,3 +117,15 @@ export type Dict<
   clear: () => void
   getItem: (value?: string | null) => Simplify<{ value: string } & Item> | null
 }
+
+export type VDictItem<T extends AnyFn> = ReturnType<T> extends {
+  list: Array<infer R>
+}
+  ? R
+  : never
+
+export type VDictUnionValue<T extends AnyFn> = ReturnType<T> extends {
+  E: infer R
+}
+  ? keyof R
+  : never

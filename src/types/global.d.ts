@@ -10,6 +10,8 @@ export {}
 declare global {
   type Recordable<T = any> = Record<string, T>
 
+  type AnyFn<Return = any, Args extends unknown[] = any[]> = (...args: Args) => Return
+
   type Getter<T> = () => T
 
   type MaybeGetter<T> = T | Getter<T>
