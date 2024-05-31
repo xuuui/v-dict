@@ -79,7 +79,9 @@ export interface DefineDict<ME extends ExtraGetter> {
   <
     R extends boolean,
     F extends Fetch,
-    D extends Recordable<{ label: string; [x: string]: any }>,
+    D extends Recordable<
+      R extends true ? { label?: string; [x: string]: any } : { label: string; [x: string]: any }
+    >,
     E extends ExtraGetter
   >(
     code: string,

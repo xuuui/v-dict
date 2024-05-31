@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.2.4
+
+### Patch Changes
+
+- 优化类型
+
 ## 1.2.3
 
 ### Patch Changes
