@@ -1,6 +1,6 @@
 import { computed, reactive, ref, type Ref, shallowRef, type ShallowRef, toRef, watch } from 'vue'
 
-import { cloneDeep, isFunction, merge } from 'lodash-es'
+import { cloneDeep, merge } from 'lodash-es'
 
 import { createPromise } from './create-promise'
 import type {
@@ -12,7 +12,7 @@ import type {
   LoadPromise,
   UseDictOptions
 } from './types'
-import { clearObj, mapToList, mapToObj, toMap } from './util'
+import { clearObj, isFunction, mapToList, mapToObj, toMap } from './util'
 
 const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
 

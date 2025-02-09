@@ -5,9 +5,11 @@
  * @Description:
  */
 
-import { isArray, isUndefined, omit, pick } from 'lodash-es'
-
 import type { DictItemRecord, DictMap } from './types'
+
+export function isFunction(fn: unknown): fn is AnyFn {
+  return typeof fn === 'function'
+}
 
 export function clearObj(obj: Recordable) {
   for (const key of Object.keys(obj)) {
@@ -17,64 +19,57 @@ export function clearObj(obj: Recordable) {
 
 export function mapToObj(map: DictMap, obj: Recordable<DictItemRecord> = {}) {
   clearObj(obj)
-  map.forEach((value, key) => {
+  for (const [key, value] of map) {
     obj[key] = value
-  })
+  }
   return obj
 }
 
-export function objToMap(obj: Recordable<DictItemRecord>) {
-  const map: DictMap = new Map()
-  for (const key of Object.keys(obj)) {
-    const item = obj[key]
-    if (isUndefined(item.value)) {
-      item.value = key
-    }
-    map.set(key, item)
-  }
-  return map
+function checkObjItem(item: DictItemRecord, key: string) {
+  if (item.value === undefined) item.value = key
 }
 
-export function mapToList(map: DictMap, list: DictItemRecord[] = []) {
-  list.length = 0
-  list.push(...map.values())
+export function objToMap(obj: Recordable<DictItemRecord>): DictMap {
+  const entries = Object.entries(obj)
+  for (const [key, item] of entries) {
+    checkObjItem(item, key)
+  }
+  return new Map(entries)
+}
+
+export function mapToList(map: DictMap, list: DictItemRecord[] = []): DictItemRecord[] {
+  list.splice(0, list.length, ...map.values())
   return list
 }
 
 export function listToMap(list: DictItemRecord[]) {
-  const map: DictMap = new Map()
-  for (const item of list) {
-    map.set(item.value, item)
-  }
-  return map
+  return new Map(list.map((item) => [item.value, item]))
+}
+
+type MapOptions = {
+  pickValues?: string[]
+  omitValues?: string[]
 }
 
 export function toMap(
   data: Recordable<DictItemRecord> | DictItemRecord[],
-  {
-    pickValues,
-    omitValues
-  }: {
-    pickValues?: string[]
-    omitValues?: string[]
-  } = {}
-) {
-  if (isArray(data)) {
-    if (pickValues?.length) {
-      data = data.filter((item) => pickValues.includes(item.value))
-    }
-    if (omitValues?.length) {
-      data = data.filter((item) => !omitValues.includes(item.value))
-    }
-    return listToMap(data)
+  options: MapOptions = {}
+): DictMap {
+  const { pickValues = [], omitValues = [] } = options
+
+  const filterFn = (value: string): boolean =>
+    (pickValues.length === 0 || pickValues.includes(value)) && !omitValues.includes(value)
+
+  if (Array.isArray(data)) {
+    return listToMap(data.filter((item) => filterFn(item.value)))
   }
-  if (pickValues?.length) {
-    data = pick(data, ...pickValues)
-  }
-  if (omitValues?.length) {
-    data = omit(data, ...omitValues)
-  }
-  return objToMap(data)
+
+  return new Map(
+    Object.entries(data).filter(([key, item]) => {
+      checkObjItem(item, key)
+      return filterFn(key)
+    })
+  )
 }
 
 export const defineDictData = <T>(data: T): T => data
