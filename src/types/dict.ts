@@ -5,85 +5,105 @@
  * @Description:
  */
 
-import type { Merge, Simplify, ValueOf } from 'type-fest'
-
 import type { createPromise } from '../create-promise'
-import type { MergeUnionObject } from './util'
+import type { Merge, MergeValues } from './merge'
 
 export type DictItem = {
   label: string
   value: string
 }
 
-export type DictItemRecord = {
-  label: string
-  value: string
-  [x: string]: any
-}
+export type DictItemRecord = DictItem & Recordable
 
 export type DictMap = Map<string, DictItemRecord>
 
-export type Fetch = (code: string, options?: any) => MaybePromise<DictItemRecord[]>
+export type LoadPromise = ReturnType<typeof createPromise<void>>
 
-export interface CreateDictManager<E extends ExtraGetter> {
-  fetch?: Fetch
-  extra?: E
+export type Dict<
+  K extends PropertyKey = PropertyKey,
+  I extends Recordable = DictItem,
+  O extends Recordable = Recordable
+> = {
+  list: I[]
+  E: {
+    [X in K]: X
+  }
+  map: {
+    [X in K]: I
+  }
+  loadPromise: LoadPromise
+  load: (options?: O) => LoadPromise
+  clear: () => void
+  getItem: (value?: I['value'] | Nil) => I | Nil
 }
 
+export type Fetch = (code: string, options?: Recordable) => MaybePromise<DictItemRecord[]>
+
+type FetchOptions<F extends Fetch> = Parameters<F>[1] extends infer T
+  ? T extends Nil
+    ? {}
+    : T
+  : {}
+
+type FetchReturnItem<F extends Fetch> = UnwrapArray<Awaited<ReturnType<F>>> extends infer Item
+  ? If<never, Item, {}>
+  : {}
+
 export type ExtraGetter<D extends Dict<string> = Dict<string>> = (dict: D) => Recordable
+
+export interface CreateDictManagerOptions<E extends ExtraGetter, F extends Fetch> {
+  fetch?: F
+  extra?: E
+}
 
 export type UseDictOptions = {
   clone?: boolean
   immediate?: boolean
   refresh?: boolean
-  [x: string]: any
+} & Recordable
+
+type Options<F extends Fetch> = FetchOptions<F> & {
+  dictOptions: UseDictOptions
 }
 
-type ExtractFetchOptions<F extends Fetch> = Parameters<F>[1] extends infer T
-  ? T extends undefined
-    ? {}
-    : T
-  : never
+type CreateDict<D extends Recordable<Recordable>, F extends Fetch> = Dict<
+  keyof D,
+  Simplify<
+    Merge<[DictItem, FetchReturnItem<F>, MergeValues<D>]> extends infer Item
+      ? Item extends never
+        ? DictItem
+        : Item extends Recordable
+        ? OptionalRequired<Item, 'label' | 'value'>
+        : DictItem
+      : DictItem
+  >,
+  Simplify<Options<F>>
+>
 
-type ExtractFetchReturn<F extends Fetch> = UnwrapArray<Awaited<ReturnType<F>>> extends infer Item
-  ? Item extends never
-    ? {}
-    : Item
-  : never
-
-type _UseDict<
-  ME extends ExtraGetter,
-  E extends ExtraGetter,
-  D extends Recordable,
-  F extends Fetch
-> = (
-  options?: Simplify<UseDictOptions & ExtractFetchOptions<F>>
-) => Simplify<CreateDict<D, F> & ReturnType<ME> & ReturnType<E>>
+type _UseDict<E extends Recordable, D extends Recordable<Recordable>, F extends Fetch> = (
+  options?: Simplify<Options<F>>
+) => CreateDict<D, F> & E
 
 export type UseDict<
-  ME extends ExtraGetter,
-  E extends ExtraGetter,
-  D extends Recordable,
+  E extends Recordable,
+  D extends Recordable<Recordable>,
   F extends Fetch
-> = _UseDict<ME, E, D, F> & {
+> = _UseDict<E, D, F> & {
   extend: (
     extendCode: string,
     extendOptions?: {
       pickValues?: Simplify<keyof D>[]
       omitValues?: Simplify<keyof D>[]
     }
-  ) => UseDict<ME, E, D, F>
+  ) => UseDict<E, D, F>
 }
 
-export interface DefineDict<ME extends ExtraGetter> {
-  <
-    R extends boolean,
-    F extends Fetch,
-    D extends Recordable<
-      R extends true ? { label?: string; [x: string]: any } : { label: string; [x: string]: any }
-    >,
-    E extends ExtraGetter
-  >(
+type Data<R extends boolean> = Recordable<
+  (R extends true ? { label?: string } : { label: string }) & Recordable
+>
+
+export interface DefineDict<ME extends ExtraGetter, MF extends Fetch> {
+  <R extends boolean, F extends Fetch, D extends Data<R>, E extends ExtraGetter>(
     code: string,
     options?: MaybeGetter<{
       remote?: R
@@ -91,33 +111,7 @@ export interface DefineDict<ME extends ExtraGetter> {
       data?: D
       extra?: E
     }>
-  ): UseDict<ME, E, D, F>
-}
-
-type CreateDict<D extends Recordable<Recordable>, F extends Fetch> = Dict<
-  keyof D,
-  Merge<ExtractFetchReturn<F>, MergeUnionObject<ValueOf<D>>>,
-  UseDictOptions & ExtractFetchOptions<F>
->
-
-export type LoadPromise = ReturnType<typeof createPromise<void>>
-
-export type Dict<
-  Key extends PropertyKey = PropertyKey,
-  Item extends Recordable = DictItem,
-  Options = Recordable
-> = {
-  list: Simplify<{ value: string } & Item>[]
-  E: {
-    [K in Key]: K
-  }
-  map: {
-    [K in Key]: Simplify<{ value: string } & Item>
-  }
-  loadPromise: LoadPromise
-  load: (options?: Options) => LoadPromise
-  clear: () => void
-  getItem: (value?: string | null) => Simplify<{ value: string } & Item> | null
+  ): UseDict<ReturnType<ME> & ReturnType<E>, D, MF>
 }
 
 export type VDictItem<T extends AnyFn> = ReturnType<T> extends {

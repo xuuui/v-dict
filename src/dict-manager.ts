@@ -4,11 +4,12 @@ import { cloneDeep, merge } from 'lodash-es'
 
 import { createPromise } from './create-promise'
 import type {
-  CreateDictManager,
+  CreateDictManagerOptions,
   DefineDict,
   DictItemRecord,
   DictMap,
   ExtraGetter,
+  Fetch,
   LoadPromise,
   UseDictOptions
 } from './types'
@@ -16,10 +17,10 @@ import { clearObj, isFunction, mapToList, mapToObj, toMap } from './util'
 
 const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
 
-export function createDictManager<E extends ExtraGetter>(
-  managerOptions: CreateDictManager<E> = {}
+export function createDictManager<E extends ExtraGetter, F extends Fetch>(
+  createDictManagerOptions: CreateDictManagerOptions<E, F> = {}
 ) {
-  const { fetch: managerFetch, extra: managerExtra } = managerOptions
+  const { fetch: managerFetch, extra: managerExtra } = createDictManagerOptions
 
   const maps = reactive<Recordable<DictMap>>(Object.create(null))
   const defineDictOptionsMap = new Map<string, Recordable>()
@@ -32,24 +33,31 @@ export function createDictManager<E extends ExtraGetter>(
     clearObj(maps)
   }
 
+  type DefineDictInternalOptions = {
+    pickValues?: string[]
+    omitValues?: string[]
+    extendCode?: string
+  }
+  type DefineDictOptions = Parameters<DefineDict<E, F>>[1]
+
   function _defineDict(
-    internalOptions: { pickValues?: string[]; omitValues?: string[]; extendCode?: string },
+    defineDictInternalOptions: DefineDictInternalOptions,
     code: string,
-    defineDictOptions: Parameters<DefineDict<E>>[1]
+    defineDictOptions: DefineDictOptions
   ) {
-    const { pickValues, omitValues, extendCode } = internalOptions
+    const { pickValues, omitValues, extendCode } = defineDictInternalOptions
 
     if (maps[code]) {
       warn(`code "${code}" already exists`)
     }
 
-    const options: Parameters<DefineDict<E>>[1] = Object.assign(
+    const _defineDictOptions: DefineDictOptions = Object.assign(
       { data: {}, remote: false, fetch: managerFetch },
       isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions
     )
-    defineDictOptionsMap.set(code, cloneDeep(options))
+    defineDictOptionsMap.set(code, cloneDeep(_defineDictOptions))
 
-    const { data, remote, fetch, extra } = options
+    const { data, remote, fetch, extra } = _defineDictOptions
 
     const globalLoadPromise = shallowRef<LoadPromise | null>(null)
     maps[code] = new Map()
@@ -136,7 +144,7 @@ export function createDictManager<E extends ExtraGetter>(
       })
 
       function getItem(value?: string | null) {
-        return value ? objRef.value[value] : null
+        return value !== null && value !== undefined ? objRef.value[value] : null
       }
 
       const ctx = {
@@ -172,7 +180,7 @@ export function createDictManager<E extends ExtraGetter>(
     return useDict
   }
 
-  const defineDict = _defineDict.bind(null, {}) as unknown as DefineDict<E>
+  const defineDict = _defineDict.bind(null, {}) as unknown as DefineDict<E, F>
 
   return { defineDict, clear }
 }

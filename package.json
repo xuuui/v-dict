@@ -40,7 +40,6 @@
   "license": "MIT",
   "dependencies": {
     "lodash-es": "^4.17.21",
-    "type-fest": "^4.9.0",
     "@types/lodash-es": "^4.17.12"
   },
   "peerDependencies": {
