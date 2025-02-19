@@ -13,5 +13,5 @@
     "declaration": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src/**/*", "demo/**/*"]
+  "include": ["src/**/*"]
 }

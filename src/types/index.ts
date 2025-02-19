@@ -5,3 +5,4 @@
  * @Description:
  */
 export * from './dict'
+export * from './merge'

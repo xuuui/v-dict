@@ -63,7 +63,7 @@ export type UseDictOptions = {
 } & Recordable
 
 type Options<F extends Fetch> = FetchOptions<F> & {
-  dictOptions: UseDictOptions
+  dictOptions?: UseDictOptions
 }
 
 type CreateDict<D extends Recordable<Recordable>, F extends Fetch> = Dict<

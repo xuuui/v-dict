@@ -10,6 +10,8 @@ export {}
 declare global {
   type Nil = undefined | null
 
+  type PlainObject<T = any> = Record<PropertyKey, any>
+
   type Recordable<T = any> = Record<string, T>
 
   type AnyFn<Return = any, Args extends unknown[] = any[]> = (...args: Args) => Return

@@ -1,7 +1,5 @@
 import { computed, reactive, ref, type Ref, shallowRef, type ShallowRef, toRef, watch } from 'vue'
 
-import { cloneDeep, merge } from 'lodash-es'
-
 import { createPromise } from './create-promise'
 import type {
   CreateDictManagerOptions,
@@ -13,7 +11,7 @@ import type {
   LoadPromise,
   UseDictOptions
 } from './types'
-import { clearObj, isFunction, mapToList, mapToObj, toMap } from './util'
+import { clearObj, cloneDeep, isFunction, mapToList, mapToObj, merge, toMap } from './util'
 
 const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
 
@@ -69,7 +67,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         mapRef.value = toMap(res, { pickValues, omitValues })
         dataMap.forEach((value, key) => {
           if (mapRef.value.has(key)) {
-            merge(mapRef.value.get(key), value)
+            merge(mapRef.value.get(key)!, value)
           }
         })
       } else {
@@ -184,27 +182,3 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
   return { defineDict, clear }
 }
-
-// const dm = createDictManager({
-//   fetch: () => {
-//     return [] as Array<{ label: string; value: string }>
-//   }
-// })
-
-// const useTestDict = dm.defineDict('TEST', {
-//   remote: true,
-//   fetch: async (_: string, { x }: { x: number }) => {
-//     return [{ label: '3', value: 's', h: 4 }] as Array<{
-//       label: string
-//       value: string
-//       h?: number
-//       [x: string]: any
-//     }>
-//   }
-// })
-
-// const useX = useTestDict.extend('codex', {
-//   pickValues: ['X']
-// })
-
-// const dict = useX()
