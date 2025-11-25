@@ -4,11 +4,15 @@
  * @LastEditors: fangruiyi
  * @Description:
  */
-type UnionKeys<T> = T extends any ? keyof T : never
-type AllKeys<T extends any[]> = UnionKeys<T[number]>
+// ========== 用于元组类型的 Merge 实现 ==========
+type TupleUnionKeys<T> = T extends any ? keyof T : never
+type TupleAllKeys<T extends any[]> = TupleUnionKeys<T[number]>
 
-type GetUnionType<T extends any[], K extends PropertyKey> = T extends [infer First, ...infer Rest]
-  ? (K extends keyof First ? First[K] : never) | GetUnionType<Rest, K>
+type TupleGetUnionType<T extends any[], K extends PropertyKey> = T extends [
+  infer First,
+  ...infer Rest
+]
+  ? (K extends keyof First ? First[K] : undefined) | TupleGetUnionType<Rest, K>
   : never
 
 type Widen<T> = T extends string
@@ -20,26 +24,57 @@ type Widen<T> = T extends string
   : T
 
 type IsRequiredProperty<T, K extends keyof T> = {} extends Pick<T, K> ? false : true
+
 type IsAllRequired<T extends any[], K> = T extends [infer First, ...infer Rest]
   ? (K extends keyof First ? IsRequiredProperty<First, K> : false) extends true
     ? IsAllRequired<Rest, K>
     : false
   : true
 
-type RequiredKeys<T extends any[]> = {
-  [K in AllKeys<T>]: IsAllRequired<T, K> extends true ? K : never
-}[AllKeys<T>]
+type TupleRequiredKeys<T extends any[]> = {
+  [K in TupleAllKeys<T>]: IsAllRequired<T, K> extends true ? K : never
+}[TupleAllKeys<T>]
 
 export type Merge<T extends any[]> = {
-  [K in Exclude<AllKeys<T>, RequiredKeys<T>>]?: Widen<GetUnionType<T, K>>
+  [K in Exclude<TupleAllKeys<T>, TupleRequiredKeys<T>>]?: Widen<TupleGetUnionType<T, K>>
 } & {
-  [K in RequiredKeys<T>]: Widen<GetUnionType<T, K>>
+  [K in TupleRequiredKeys<T>]: Widen<TupleGetUnionType<T, K>>
 } extends infer O
   ? { [P in keyof O]: O[P] }
   : never
 
-export type MergeUnion<T> = Merge<[T]>
+// ========== 用于联合类型的 MergeUnion 实现 ==========
+type UnionKeys<T> = T extends any ? keyof T : never
 
+type UnionValueOf<T, K extends PropertyKey> = T extends any
+  ? K extends keyof T
+    ? T[K]
+    : undefined
+  : never
+
+type UnionIsAlwaysPresent<T, K extends PropertyKey> = [T] extends [infer U]
+  ? U extends any
+    ? K extends keyof U
+      ? true
+      : false
+    : never
+  : never
+
+type UnionRequiredKeys<T> = {
+  [K in UnionKeys<T>]: UnionIsAlwaysPresent<T, K> extends true ? K : never
+}[UnionKeys<T>]
+
+type UnionOptionalKeys<T> = Exclude<UnionKeys<T>, UnionRequiredKeys<T>>
+
+export type MergeUnion<T> = {
+  [K in UnionOptionalKeys<T>]?: Widen<UnionValueOf<T, K>>
+} & {
+  [K in UnionRequiredKeys<T>]: Widen<UnionValueOf<T, K>>
+} extends infer O
+  ? { [P in keyof O]: O[P] }
+  : never
+
+// ========== MergeValues 实现 ==========
 export type MergeValues<T> = MergeUnion<
   {
     [K in keyof T]: T[K]

@@ -1,4 +1,14 @@
-import { computed, reactive, ref, type Ref, shallowRef, type ShallowRef, toRef, watch } from 'vue'
+import {
+  computed,
+  reactive,
+  readonly,
+  ref,
+  type Ref,
+  shallowRef,
+  type ShallowRef,
+  toRef,
+  watch
+} from 'vue'
 
 import { createPromise } from './create-promise'
 import type {
@@ -6,9 +16,11 @@ import type {
   DefineDict,
   DictItemRecord,
   DictMap,
+  DictValue,
   ExtraGetter,
   Fetch,
   LoadPromise,
+  Recordable,
   UseDictOptions
 } from './types'
 import { clearObj, cloneDeep, isFunction, mapToList, mapToObj, merge, toMap } from './util'
@@ -32,8 +44,8 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   }
 
   type DefineDictInternalOptions = {
-    pickValues?: string[]
-    omitValues?: string[]
+    pickValues?: DictValue[]
+    omitValues?: DictValue[]
     extendCode?: string
   }
   type DefineDictOptions = Parameters<DefineDict<E, F>>[1]
@@ -60,14 +72,14 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     const globalLoadPromise = shallowRef<LoadPromise | null>(null)
     maps[code] = new Map()
 
-    async function loadDict(options: Recordable, mapRef: Ref<DictMap>) {
+    async function loadDict(options: Recordable, mapRef: Ref<DictMap | undefined>) {
       const dataMap = toMap(cloneDeep(data as any), { pickValues, omitValues })
       if (remote) {
         const res = (await fetch?.(extendCode ?? code, options)) ?? []
         mapRef.value = toMap(res, { pickValues, omitValues })
         dataMap.forEach((value, key) => {
-          if (mapRef.value.has(key)) {
-            merge(mapRef.value.get(key)!, value)
+          if (mapRef.value!.has(key)) {
+            merge(mapRef.value!.get(key)!, value)
           }
         })
       } else {
@@ -84,7 +96,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       const { clone, immediate, refresh } = useDictOptions
 
       const loadPromise = !clone ? globalLoadPromise : shallowRef<LoadPromise>(createPromise())
-      const mapRef = !clone ? toRef(maps, code) : ref<DictMap>(new Map())
+      const mapRef = !clone ? toRef(maps, code) : ref<DictMap | undefined>()
 
       const objRef = ref<Recordable<DictItemRecord>>(Object.create(null))
       const listRef = ref<DictItemRecord[]>([])
@@ -121,12 +133,13 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       }
 
       function _clear() {
-        mapRef.value.clear()
+        mapRef.value?.clear()
       }
 
       watch(
         mapRef,
         (newValue) => {
+          newValue ??= new Map()
           mapToObj(newValue, objRef.value)
           mapToList(newValue, listRef.value)
         },
@@ -135,14 +148,15 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
       const E = computed(() => {
         const result: Recordable<string> = {}
-        for (const key of mapRef.value.keys()) {
+        if (!mapRef.value) return result
+        for (const key of mapRef.value.keys() as unknown as string[]) {
           result[key] = key
         }
         return result
       })
 
-      function getItem(value?: string | null) {
-        return value !== null && value !== undefined ? objRef.value[value] : null
+      function getItem(value?: DictValue | null) {
+        return value !== null && value !== undefined ? mapRef.value?.get(value) : null
       }
 
       const ctx = {
@@ -166,8 +180,8 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     useDict.extend = (
       extendCode: string,
       extendOptions?: {
-        pickValues?: string[]
-        omitValues?: string[]
+        pickValues?: DictValue[]
+        omitValues?: DictValue[]
       }
     ) => {
       const { pickValues, omitValues } = extendOptions ?? {}
@@ -180,5 +194,36 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
   const defineDict = _defineDict.bind(null, {}) as unknown as DefineDict<E, F>
 
-  return { defineDict, clear }
+  return { defineDict, clear, maps: readonly(maps) }
 }
+
+// const data = {
+//   SUCCESS: {
+//     label: '成功',
+//     value: 1,
+//     color: 's'
+//   },
+//   FAIL: {
+//     label: '失败',
+//     value: 2,
+//     color: 3
+//   }
+// }
+// const dm = createDictManager({
+//   fetch: async (): Promise<DictItem[]> => {
+//     return []
+//   }
+// })
+// const testDict = dm.defineDict('test', {
+//   data,
+//   extra: (dict) => {
+//     return {
+//       getLabel: (value: any) => {
+//         return dict.map[value]?.label
+//       },
+//       getItem: (value: any): (DictItem & Recordable) | undefined => {
+//         return dict.map[value] as any
+//       }
+//     }
+//   }
+// })

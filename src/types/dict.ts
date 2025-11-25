@@ -7,15 +7,26 @@
 
 import type { createPromise } from '../create-promise'
 import type { Merge, MergeValues } from './merge'
+import type {
+  AnyFn,
+  MaybeGetter,
+  MaybePromise,
+  Nil,
+  OptionalRequired,
+  Recordable,
+  Simplify
+} from './tool'
+
+export type DictValue = number | string
 
 export type DictItem = {
   label: string
-  value: string
+  value: DictValue
 }
 
 export type DictItemRecord = DictItem & Recordable
 
-export type DictMap = Map<string, DictItemRecord>
+export type DictMap = Map<DictValue, DictItemRecord>
 
 export type LoadPromise = ReturnType<typeof createPromise<void>>
 
@@ -45,9 +56,9 @@ type FetchOptions<F extends Fetch> = Parameters<F>[1] extends infer T
     : T
   : {}
 
-type FetchReturnItem<F extends Fetch> = UnwrapArray<Awaited<ReturnType<F>>> extends infer Item
-  ? If<never, Item, {}>
-  : {}
+// type FetchReturnItem<F extends Fetch> = UnwrapArray<Awaited<ReturnType<F>>> extends infer Item
+//   ? If<never, Item, {}>
+//   : {}
 
 export type ExtraGetter<D extends Dict<string> = Dict<string>> = (dict: D) => Recordable
 
@@ -62,14 +73,12 @@ export type UseDictOptions = {
   refresh?: boolean
 } & Recordable
 
-type Options<F extends Fetch> = FetchOptions<F> & {
-  dictOptions?: UseDictOptions
-}
+type Options<F extends Fetch> = FetchOptions<F> & UseDictOptions
 
 type CreateDict<D extends Recordable<Recordable>, F extends Fetch> = Dict<
   keyof D,
   Simplify<
-    Merge<[DictItem, FetchReturnItem<F>, MergeValues<D>]> extends infer Item
+    Merge<[DictItem, MergeValues<D>]> extends infer Item
       ? Item extends never
         ? DictItem
         : Item extends Recordable

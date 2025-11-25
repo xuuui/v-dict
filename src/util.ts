@@ -5,7 +5,15 @@
  * @Description:
  */
 
-import type { DictItemRecord, DictMap, Merge } from './types'
+import type {
+  AnyFn,
+  DictItemRecord,
+  DictMap,
+  DictValue,
+  Merge,
+  PlainObject,
+  Recordable
+} from './types'
 
 export function isFunction(fn: unknown): fn is AnyFn {
   return typeof fn === 'function'
@@ -25,16 +33,27 @@ export function mapToObj(map: DictMap, obj: Recordable<DictItemRecord> = {}) {
   return obj
 }
 
-function checkObjItem(item: DictItemRecord, key: string) {
-  if (item.value === undefined) item.value = key
+function checkObjItem(
+  item: DictItemRecord,
+  key: string,
+  transformer?: (value: DictValue) => DictValue
+) {
+  if (item.value === undefined) {
+    item.value = key
+  }
+  if (isFunction(transformer)) {
+    item.value = transformer(item.value)
+  }
 }
 
 export function objToMap(obj: Recordable<DictItemRecord>): DictMap {
   const entries = Object.entries(obj)
+  const map = new Map()
   for (const [key, item] of entries) {
     checkObjItem(item, key)
+    map.set(key, item)
   }
-  return new Map(entries)
+  return map
 }
 
 export function mapToList(map: DictMap, list: DictItemRecord[] = []): DictItemRecord[] {
@@ -47,8 +66,8 @@ export function listToMap(list: DictItemRecord[]) {
 }
 
 type MapOptions = {
-  pickValues?: string[]
-  omitValues?: string[]
+  pickValues?: DictValue[]
+  omitValues?: DictValue[]
 }
 
 export function toMap(
@@ -57,7 +76,7 @@ export function toMap(
 ): DictMap {
   const { pickValues = [], omitValues = [] } = options
 
-  const filterFn = (value: string): boolean =>
+  const filterFn = (value: DictValue): boolean =>
     (pickValues.length === 0 || pickValues.includes(value)) && !omitValues.includes(value)
 
   if (Array.isArray(data)) {
