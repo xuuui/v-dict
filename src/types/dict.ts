@@ -65,6 +65,7 @@ export type ExtraGetter<D extends Dict<string> = Dict<string>> = (dict: D) => Re
 export interface CreateDictManagerOptions<E extends ExtraGetter, F extends Fetch> {
   fetch?: F
   extra?: E
+  transformer?: (value: DictValue) => DictValue
 }
 
 export type UseDictOptions = {
@@ -119,6 +120,7 @@ export interface DefineDict<ME extends ExtraGetter, MF extends Fetch> {
       fetch?: F
       data?: D
       extra?: E
+      transformer?: (value: DictValue) => DictValue
     }>
   ): UseDict<ReturnType<ME> & ReturnType<E>, D, MF>
 }

@@ -30,7 +30,11 @@ const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
 export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   createDictManagerOptions: CreateDictManagerOptions<E, F> = {}
 ) {
-  const { fetch: managerFetch, extra: managerExtra } = createDictManagerOptions
+  const {
+    fetch: managerFetch,
+    extra: managerExtra,
+    transformer: managerTransformer
+  } = createDictManagerOptions
 
   const maps = reactive<Recordable<DictMap>>(Object.create(null))
   const defineDictOptionsMap = new Map<string, Recordable>()
@@ -62,21 +66,21 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     }
 
     const _defineDictOptions: DefineDictOptions = Object.assign(
-      { data: {}, remote: false, fetch: managerFetch },
+      { data: {}, remote: false, fetch: managerFetch, transformer: managerTransformer },
       isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions
     )
     defineDictOptionsMap.set(code, cloneDeep(_defineDictOptions))
 
-    const { data, remote, fetch, extra } = _defineDictOptions
+    const { data, remote, fetch, extra, transformer } = _defineDictOptions
 
     const globalLoadPromise = shallowRef<LoadPromise | null>(null)
     maps[code] = new Map()
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap | undefined>) {
-      const dataMap = toMap(cloneDeep(data as any), { pickValues, omitValues })
+      const dataMap = toMap(cloneDeep(data as any), { pickValues, omitValues, transformer })
       if (remote) {
         const res = (await fetch?.(extendCode ?? code, options)) ?? []
-        mapRef.value = toMap(res, { pickValues, omitValues })
+        mapRef.value = toMap(res, { pickValues, omitValues, transformer })
         dataMap.forEach((value, key) => {
           if (mapRef.value!.has(key)) {
             merge(mapRef.value!.get(key)!, value)

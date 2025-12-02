@@ -46,16 +46,6 @@ function checkObjItem(
   }
 }
 
-export function objToMap(obj: Recordable<DictItemRecord>): DictMap {
-  const entries = Object.entries(obj)
-  const map = new Map()
-  for (const [key, item] of entries) {
-    checkObjItem(item, key)
-    map.set(key, item)
-  }
-  return map
-}
-
 export function mapToList(map: DictMap, list: DictItemRecord[] = []): DictItemRecord[] {
   list.splice(0, list.length, ...map.values())
   return list
@@ -68,13 +58,14 @@ export function listToMap(list: DictItemRecord[]) {
 type MapOptions = {
   pickValues?: DictValue[]
   omitValues?: DictValue[]
+  transformer?: (value: DictValue) => DictValue
 }
 
 export function toMap(
   data: Recordable<DictItemRecord> | DictItemRecord[],
   options: MapOptions = {}
 ): DictMap {
-  const { pickValues = [], omitValues = [] } = options
+  const { pickValues = [], omitValues = [], transformer } = options
 
   const filterFn = (value: DictValue): boolean =>
     (pickValues.length === 0 || pickValues.includes(value)) && !omitValues.includes(value)
@@ -83,12 +74,16 @@ export function toMap(
     return listToMap(data.filter((item) => filterFn(item.value)))
   }
 
-  return new Map(
-    Object.entries(data).filter(([key, item]) => {
-      checkObjItem(item, key)
-      return filterFn(key)
+  const map = new Map()
+
+  Object.entries(data)
+    .filter(([key, item]) => {
+      checkObjItem(item, key, transformer)
+      return filterFn(item.value)
     })
-  )
+    .forEach(([, item]) => map.set(item.value, item))
+
+  return map
 }
 
 export const defineDictData = <T>(data: T): T => data
