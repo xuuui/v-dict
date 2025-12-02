@@ -1,5 +1,11 @@
 # v-dict
 
+## 1.2.8
+
+### Patch Changes
+
+- d
+
 ## 1.2.6
 
 ### Patch Changes
