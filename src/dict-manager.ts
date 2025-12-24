@@ -121,6 +121,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       } else {
         if (!globalLoadPromise.value) {
           globalLoadPromise.value = createPromise()
+          globalLoadPromise.value.resolve()
         }
       }
 
