@@ -74,6 +74,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     const { data, remote, fetch, extra, transformer } = _defineDictOptions
 
     const globalLoadPromise = shallowRef<LoadPromise | null>(null)
+    let loaded = false
     maps[code] = new Map()
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap | undefined>) {
@@ -114,7 +115,12 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
             load()
           } else {
             globalLoadPromise.value.then(() => {
-              refresh && load()
+              if (!loaded) {
+                loaded = true
+                load()
+              } else if (refresh) {
+                load()
+              }
             })
           }
         }
