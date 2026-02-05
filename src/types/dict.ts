@@ -48,7 +48,7 @@ export type Dict<
   getItem: (value?: I['value'] | Nil) => I | Nil
 }
 
-export type Fetch = (code: string, options?: Recordable) => MaybePromise<DictItemRecord[]>
+export type Fetch = (code: string, options: Recordable) => MaybePromise<DictItemRecord[]>
 
 type FetchOptions<F extends Fetch> = Parameters<F>[1] extends infer T
   ? T extends Nil
@@ -66,6 +66,7 @@ export interface CreateDictManagerOptions<E extends ExtraGetter, F extends Fetch
   fetch?: F
   extra?: E
   transformer?: (value: DictValue) => DictValue
+  itemTransformer?: (item: DictItemRecord) => any
 }
 
 export type UseDictOptions = {
@@ -121,8 +122,9 @@ export interface DefineDict<ME extends ExtraGetter, MF extends Fetch> {
       data?: D
       extra?: E
       transformer?: (value: DictValue) => DictValue
+      itemTransformer?: (item: DictItemRecord) => any
     }>
-  ): UseDict<ReturnType<ME> & ReturnType<E>, D, MF>
+  ): UseDict<ReturnType<ME> & ReturnType<E>, D, F extends undefined ? MF : F>
 }
 
 export type VDictItem<T extends AnyFn> = ReturnType<T> extends {

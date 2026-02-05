@@ -11,7 +11,7 @@ import { defineConfig } from 'tsup'
 const BUILD_TYPE_COMMAND = 'build:type'
 
 const externals = {
-  common: ['vue', 'lodash-es']
+  common: ['vue', 'lodash-es', 'react']
 }
 
 function buildType() {
@@ -33,7 +33,7 @@ export default defineConfig(
       target,
       clean: true,
       dts: false,
-      entry: ['src/index.ts'],
+      entry: ['src/index.ts', 'src/react/index.ts'],
       outDir: 'dist',
       format: ['cjs', 'esm'],
       minify,

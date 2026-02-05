@@ -1,8 +1,8 @@
 {
   "name": "v-dict",
-  "version": "1.2.9",
+  "version": "1.2.11",
   "type": "module",
-  "description": "Vue3 Dict Manager",
+  "description": "Vue3 & React Dict Manager",
   "repository": {
     "type": "git",
     "url": "https://github.com/xuuui/v-dict"
@@ -14,7 +14,12 @@
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
-      "types": "./lib/index.d.ts"
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs",
+      "types": "./dist/react/index.d.ts"
     },
     "./*": "./*"
   },
@@ -32,19 +37,25 @@
   },
   "keywords": [
     "vue",
+    "react",
     "dict",
     "dictionary",
-    "vue3"
+    "vue3",
+    "react-dict"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
-    "vue": "^3.0.0"
+    "vue": "^3.0.0",
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
     "@types/node": "^20.11.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "tsup": "^8.0.1",
     "typescript": "^5.7.3",
     "vue": "^3.4.10"

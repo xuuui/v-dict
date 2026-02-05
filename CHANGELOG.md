@@ -1,5 +1,17 @@
 # v-dict
 
+## 1.2.11
+
+### Patch Changes
+
+- 新增 react
+
+## 1.2.10
+
+### Patch Changes
+
+- x
+
 ## 1.2.9
 
 ### Patch Changes

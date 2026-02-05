@@ -33,7 +33,8 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   const {
     fetch: managerFetch,
     extra: managerExtra,
-    transformer: managerTransformer
+    transformer: managerTransformer,
+    itemTransformer: managerItemTransformer
   } = createDictManagerOptions
 
   const maps = reactive<Recordable<DictMap>>(Object.create(null))
@@ -66,12 +67,18 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     }
 
     const _defineDictOptions: DefineDictOptions = Object.assign(
-      { data: {}, remote: false, fetch: managerFetch, transformer: managerTransformer },
+      {
+        data: {},
+        remote: false,
+        fetch: managerFetch,
+        transformer: managerTransformer,
+        itemTransformer: managerItemTransformer
+      },
       isFunction(defineDictOptions) ? defineDictOptions() : defineDictOptions
     )
     defineDictOptionsMap.set(code, cloneDeep(_defineDictOptions))
 
-    const { data, remote, fetch, extra, transformer } = _defineDictOptions
+    const { data, remote, fetch, extra, transformer, itemTransformer } = _defineDictOptions
 
     const globalLoadPromise = shallowRef<LoadPromise | null>(null)
     let loaded = false
@@ -151,8 +158,8 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         mapRef,
         (newValue) => {
           newValue ??= new Map()
-          mapToObj(newValue, objRef.value)
-          mapToList(newValue, listRef.value)
+          mapToObj(newValue, objRef.value, itemTransformer)
+          mapToList(newValue, listRef.value, itemTransformer)
         },
         { deep: true, immediate: true }
       )

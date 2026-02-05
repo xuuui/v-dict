@@ -25,10 +25,14 @@ export function clearObj(obj: Recordable) {
   }
 }
 
-export function mapToObj(map: DictMap, obj: Recordable<DictItemRecord> = {}) {
+export function mapToObj(
+  map: DictMap,
+  obj: Recordable<DictItemRecord> = {},
+  itemTransformer?: (item: DictItemRecord) => any
+) {
   clearObj(obj)
   for (const [key, value] of map) {
-    obj[key] = value
+    obj[key] = itemTransformer?.(value) ?? value
   }
   return obj
 }
@@ -46,8 +50,13 @@ function checkObjItem(
   }
 }
 
-export function mapToList(map: DictMap, list: DictItemRecord[] = []): DictItemRecord[] {
-  list.splice(0, list.length, ...map.values())
+export function mapToList(
+  map: DictMap,
+  list: DictItemRecord[] = [],
+  itemTransformer?: (item: DictItemRecord) => any
+): DictItemRecord[] {
+  const values = itemTransformer ? map.values().map(itemTransformer) : map.values()
+  list.splice(0, list.length, ...values)
   return list
 }
 
