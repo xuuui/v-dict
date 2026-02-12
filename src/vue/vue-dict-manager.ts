@@ -10,7 +10,7 @@ import {
   watch
 } from 'vue'
 
-import { createPromise } from './create-promise'
+import { createPromise } from '../create-promise'
 import type {
   CreateDictManagerOptions,
   DefineDict,
@@ -22,10 +22,8 @@ import type {
   LoadPromise,
   Recordable,
   UseDictOptions
-} from './types'
-import { clearObj, cloneDeep, isFunction, mapToList, mapToObj, merge, toMap } from './util'
-
-const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
+} from '../types'
+import { cloneDeep, isFunction, mapToList, mapToObj, merge, toMap, warn } from '../util'
 
 export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   createDictManagerOptions: CreateDictManagerOptions<E, F> = {}
@@ -45,7 +43,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       maps[code]?.clear()
       return
     }
-    clearObj(maps)
+    Object.values(maps).forEach((map) => map.clear())
   }
 
   type DefineDictInternalOptions = {
@@ -64,6 +62,8 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
     if (maps[code]) {
       warn(`code "${code}" already exists`)
+    } else {
+      maps[code] = new Map()
     }
 
     const _defineDictOptions: DefineDictOptions = Object.assign(
@@ -80,9 +80,8 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
     const { data, remote, fetch, extra, transformer, itemTransformer } = _defineDictOptions
 
-    const globalLoadPromise = shallowRef<LoadPromise | null>(null)
-    let loaded = false
-    maps[code] = new Map()
+    let globalLoadPromise: LoadPromise | null = null
+    let init = false
 
     async function loadDict(options: Recordable, mapRef: Ref<DictMap | undefined>) {
       const dataMap = toMap(cloneDeep(data as any), { pickValues, omitValues, transformer })
@@ -104,11 +103,12 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         { clone: false, immediate: true, refresh: false },
         useDictOptions
       )
-
       const { clone, immediate, refresh } = useDictOptions
 
-      const loadPromise = !clone ? globalLoadPromise : shallowRef<LoadPromise>(createPromise())
-      const mapRef = !clone ? toRef(maps, code) : ref<DictMap | undefined>()
+      const loadPromise = shallowRef<LoadPromise | null>(
+        !clone ? globalLoadPromise : createPromise()
+      )
+      const mapRef = !clone ? toRef(maps, code) : ref<DictMap>(new Map())
 
       const objRef = ref<Recordable<DictItemRecord>>(Object.create(null))
       const listRef = ref<DictItemRecord[]>([])
@@ -117,13 +117,13 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         if (clone) {
           load()
         } else {
-          if (!globalLoadPromise.value) {
-            globalLoadPromise.value = createPromise()
+          if (!globalLoadPromise) {
+            globalLoadPromise = createPromise()
             load()
           } else {
-            globalLoadPromise.value.then(() => {
-              if (!loaded) {
-                loaded = true
+            globalLoadPromise.then(() => {
+              if (!init) {
+                init = true
                 load()
               } else if (refresh) {
                 load()
@@ -132,9 +132,9 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
           }
         }
       } else {
-        if (!globalLoadPromise.value) {
-          globalLoadPromise.value = createPromise()
-          globalLoadPromise.value.resolve()
+        if (!globalLoadPromise) {
+          globalLoadPromise = createPromise()
+          globalLoadPromise.resolve()
         }
       }
 
@@ -151,24 +151,30 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       }
 
       function _clear() {
-        mapRef.value?.clear()
+        mapRef.value.clear()
       }
 
       watch(
         mapRef,
         (newValue) => {
           newValue ??= new Map()
-          mapToObj(newValue, objRef.value, itemTransformer)
-          mapToList(newValue, listRef.value, itemTransformer)
+          mapToObj(newValue, {
+            obj: objRef.value,
+            itemTransformer
+          })
+          mapToList(newValue, {
+            list: listRef.value,
+            itemTransformer
+          })
         },
         { deep: true, immediate: true }
       )
 
       const E = computed(() => {
-        const result: Recordable<string> = {}
+        const result: Recordable<string | number> = {}
         if (!mapRef.value) return result
         for (const key of mapRef.value.keys() as unknown as string[]) {
-          result[key] = key
+          result[key] = transformer?.(key) ?? key
         }
         return result
       })
@@ -190,7 +196,9 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
       return reactive({
         ...ctx,
+        // @ts-ignore
         ...managerExtra?.(reactiveCtx),
+        // @ts-ignore
         ...extra?.(reactiveCtx)
       })
     }

@@ -5,6 +5,4 @@
  * @Description:
  */
 
-export type * from './types'
-export * from './dict-manager'
-export { defineDictData } from './util'
+export * from './vue'

@@ -15,6 +15,8 @@ import type {
   Recordable
 } from './types'
 
+export const warn = (msg: string) => console.warn(`[v-dict]: ${msg}`)
+
 export function isFunction(fn: unknown): fn is AnyFn {
   return typeof fn === 'function'
 }
@@ -27,8 +29,13 @@ export function clearObj(obj: Recordable) {
 
 export function mapToObj(
   map: DictMap,
-  obj: Recordable<DictItemRecord> = {},
-  itemTransformer?: (item: DictItemRecord) => any
+  {
+    obj = {},
+    itemTransformer
+  }: {
+    obj?: Recordable<DictItemRecord>
+    itemTransformer?: (item: DictItemRecord) => any
+  } = {}
 ) {
   clearObj(obj)
   for (const [key, value] of map) {
@@ -52,19 +59,21 @@ function checkObjItem(
 
 export function mapToList(
   map: DictMap,
-  list: DictItemRecord[] = [],
-  itemTransformer?: (item: DictItemRecord) => any
+  {
+    list = [],
+    itemTransformer
+  }: {
+    list?: DictItemRecord[]
+    itemTransformer?: (item: DictItemRecord) => any
+  } = {}
 ): DictItemRecord[] {
-  const values = itemTransformer ? map.values().map(itemTransformer) : map.values()
+  const values = isFunction(itemTransformer) ? map.values().map(itemTransformer) : map.values()
   list.splice(0, list.length, ...values)
   return list
 }
 
-export function listToMap(list: DictItemRecord[]) {
-  return new Map(list.map((item) => [item.value, item]))
-}
-
 type MapOptions = {
+  map?: DictMap
   pickValues?: DictValue[]
   omitValues?: DictValue[]
   transformer?: (value: DictValue) => DictValue
@@ -72,19 +81,12 @@ type MapOptions = {
 
 export function toMap(
   data: Recordable<DictItemRecord> | DictItemRecord[],
-  options: MapOptions = {}
+  { map = new Map(), pickValues = [], omitValues = [], transformer }: MapOptions = {}
 ): DictMap {
-  const { pickValues = [], omitValues = [], transformer } = options
-
   const filterFn = (value: DictValue): boolean =>
     (pickValues.length === 0 || pickValues.includes(value)) && !omitValues.includes(value)
 
-  if (Array.isArray(data)) {
-    return listToMap(data.filter((item) => filterFn(item.value)))
-  }
-
-  const map = new Map()
-
+  map.clear()
   Object.entries(data)
     .filter(([key, item]) => {
       checkObjItem(item, key, transformer)

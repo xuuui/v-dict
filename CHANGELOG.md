@@ -1,5 +1,11 @@
 # v-dict
 
+## 2.0.0
+
+### Major Changes
+
+- react 版本
+
 ## 1.2.11
 
 ### Patch Changes
