@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { createPromise } from '../create-promise'
 import type {
+  AnyFn,
   CreateDictManagerOptions,
   DefineDict,
   DictItemRecord,
@@ -28,14 +29,22 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   const defineDictOptionsMap = new Map<string, Recordable>()
 
   const maps = Object.create(null) as Recordable<DictMap>
-  const versionMap = Object.create(null) as Recordable<number>
+  const listenersMap = Object.create(null) as Recordable<AnyFn[]>
+
+  function emitChange(code?: string) {
+    const listeners = code ? listenersMap[code] ?? [] : Object.values(listenersMap).flat()
+    for (let listener of listeners) {
+      listener()
+    }
+  }
 
   function clear(code?: string) {
     if (code) {
       maps[code]?.clear()
-      return
+    } else {
+      Object.values(maps).forEach((map) => map?.clear())
     }
-    Object.values(maps).forEach((map) => map.clear())
+    emitChange(code)
   }
 
   type DefineDictOptions = Parameters<DefineDict<E, F>>[1]
@@ -54,9 +63,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     if (maps[code]) {
       warn(`code "${code}" already exists`)
     } else {
-      // 初始化字典
       maps[code] = new Map()
-      versionMap[code] = 0
     }
 
     const _defineDictOptions: DefineDictOptions = Object.assign(
@@ -76,23 +83,58 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     let globalLoadPromise: LoadPromise | null = null
     let init = false
 
-    async function loadDict(options: Recordable, mapRef: React.MutableRefObject<DictMap>) {
+    async function loadDict(options: Recordable, map: DictMap = new Map()) {
       if (remote) {
         const res = (await fetch?.(extendCode ?? code, options)) ?? []
 
-        toMap(res, { pickValues, omitValues, transformer, map: mapRef.current })
+        toMap(res, { pickValues, omitValues, transformer, map })
         toMap(cloneDeep(data as any), { pickValues, omitValues, transformer }).forEach(
           (value, key) => {
-            if (mapRef.current.has(key)) {
-              merge(mapRef.current.get(key)!, value)
+            if (map.has(key)) {
+              merge(map.get(key)!, value)
             }
           }
         )
       } else {
-        toMap(cloneDeep(data as any), { pickValues, omitValues, transformer, map: mapRef.current })
+        toMap(cloneDeep(data as any), { pickValues, omitValues, transformer, map })
       }
-      // 标记数据源变动
-      versionMap[code] += 1
+      return map
+    }
+
+    function subscribeMap(listener: AnyFn) {
+      listenersMap[code] = [...(listenersMap[code] ?? []), listener]
+      return () => {
+        listenersMap[code] = listenersMap[code].filter((l) => l !== listener)
+      }
+    }
+
+    function getMapSnapshot() {
+      return maps[code]
+    }
+
+    const createStateFromMap = (map: DictMap = new Map()) => {
+      const newObj = Object.create(null) as Recordable<DictItemRecord>
+      const newList: DictItemRecord[] = []
+
+      mapToObj(map, {
+        obj: newObj,
+        itemTransformer
+      })
+
+      mapToList(map, {
+        list: newList,
+        itemTransformer
+      })
+
+      const newE = Object.fromEntries(
+        Array.from(map.keys()).map((key) => [key, transformer?.(key) ?? key])
+      )
+
+      return {
+        map: newObj,
+        list: newList,
+        E: newE
+      }
     }
 
     function useDict(useDictOptions: UseDictOptions = {}) {
@@ -102,53 +144,31 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         refresh: false,
         ...useDictOptions
       }
-
       const { clone, immediate, refresh } = mergedOptions
 
       const loadPromiseRef = useRef<LoadPromise | null>(
         !clone ? globalLoadPromise : createPromise()
       )
-      const mapRef = useRef<DictMap>(!clone ? maps[code] : new Map())
-      const versionRef = useRef(0)
 
-      const getStateFromMapRef = () => {
-        const newObj = Object.create(null) as Recordable<DictItemRecord>
-        const newList: DictItemRecord[] = []
+      const map = useSyncExternalStore(subscribeMap, getMapSnapshot)
+      const [clonedMap, setClonedMap] = useState(new Map())
 
-        mapToObj(mapRef.current, {
-          obj: newObj,
-          itemTransformer
-        })
-
-        mapToList(mapRef.current, {
-          list: newList,
-          itemTransformer
-        })
-
-        const newE = Object.fromEntries(
-          Array.from(mapRef.current.keys()).map((key) => [key, transformer?.(key) ?? key])
-        )
-
-        return {
-          map: newObj,
-          list: newList,
-          E: newE
-        }
-      }
-
-      const [state, setState] = useState(getStateFromMapRef())
-
-      if (versionRef.current !== versionMap[code]) {
-        versionRef.current = versionMap[code]
-        setState(getStateFromMapRef())
-      }
+      const state = useMemo(
+        () => createStateFromMap(!clone ? map : clonedMap),
+        [clone, map, clonedMap]
+      )
 
       const load = useCallback((options?: Recordable) => {
-        const oldLoadPromise = loadPromiseRef.current!
+        const oldLoadPromise = loadPromiseRef.current
         loadPromiseRef.current = createPromise()
 
-        loadDict({ ...mergedOptions, ...options }, mapRef).then(() => {
-          setState(getStateFromMapRef())
+        loadDict({ ...mergedOptions, ...options }).then((map) => {
+          if (!clone) {
+            maps[code] = map
+            emitChange(code)
+          } else {
+            setClonedMap(map)
+          }
           oldLoadPromise?.resolve(undefined)
           loadPromiseRef.current!.resolve(undefined)
         })
@@ -157,12 +177,16 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       }, [])
 
       const clear = useCallback(() => {
-        mapRef.current.clear()
-        setState(getStateFromMapRef())
+        if (!clone) {
+          maps[code] = new Map()
+          emitChange(code)
+          return
+        }
+        setClonedMap(map)
       }, [])
 
       const getItem = useCallback((value?: DictValue | null) => {
-        return value !== null && value !== undefined ? mapRef.current.get(value) : null
+        return value !== null && value !== undefined ? state.map[value] : null
       }, [])
 
       useEffect(() => {
@@ -209,7 +233,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
           // @ts-ignore
           ...extra?.(_ctx)
         }
-      }, [state])
+      }, [state, loadPromiseRef.current])
 
       return ctx
     }

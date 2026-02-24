@@ -1,5 +1,17 @@
 # v-dict
 
+## 2.0.2
+
+### Patch Changes
+
+- dep
+
+## 2.0.1
+
+### Patch Changes
+
+- react 优化
+
 ## 2.0.0
 
 ### Major Changes

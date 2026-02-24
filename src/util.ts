@@ -39,7 +39,7 @@ export function mapToObj(
 ) {
   clearObj(obj)
   for (const [key, value] of map) {
-    obj[key] = itemTransformer?.(value) ?? value
+    obj[key] = isFunction(itemTransformer) ? itemTransformer(value) : value
   }
   return obj
 }
