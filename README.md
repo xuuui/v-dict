@@ -5,7 +5,12 @@
  * @Description:
 -->
 
-# Vue3 Dict Manager
+# Vue3 & React Dict Manager
+
+## 目录
+
+- [Vue](#vue)
+- [React](#react)
 
 ## Installation
 
@@ -13,7 +18,7 @@
 npm i v-dict
 ```
 
-## Examples
+## Vue
 
 ### dict.ts
 
@@ -146,4 +151,86 @@ onMounted(async () => {
   // statusDict.clear()
 })
 </script>
+```
+
+## React
+
+### dict.ts
+
+```ts
+import { createDictManager, defineDictData } from 'v-dict/react'
+
+export const dm = createDictManager({
+  fetch: (code) =>
+    Promise.resolve([
+      { label: 'xx', value: 'xx' },
+      { label: 'xx', value: 'xx' }
+    ]),
+  extra: ({ map }) => {
+    return {
+      getLabel: (value: string) => map[value]?.label
+    }
+  }
+})
+
+export const useStatusDict = dm.defineDict('STATUS', {
+  data: defineDictData({
+    ENABLED: {
+      label: 'Enabled',
+      color: 'green'
+    },
+    DISABLED: {
+      label: 'Disabled',
+      color: 'red'
+    }
+  })
+})
+
+export const useRemoteStatusDict = dm.defineDict('REMOTE_STATUS', {
+  remote: true,
+  fetch: (code) =>
+    Promise.resolve([
+      { label: 'Enabled', value: 'ENABLED', color: 'green' },
+      { label: 'Disabled', value: 'DISABLED', color: 'red' }
+    ]),
+  extra: ({ map }) => {
+    return {
+      getItemDetail: (value: string) => map[value]
+    }
+  }
+})
+
+// clear one dict
+// dm.clear('REMOTE_STATUS')
+
+// clear all dicts
+// dm.clear()
+```
+
+### xx.tsx
+
+```tsx
+import { useEffect } from 'react'
+import { useRemoteStatusDict } from './dict'
+
+export default function Demo() {
+  const statusDict = useRemoteStatusDict({
+    // same as above
+    clone: false,
+    // same as above
+    immediate: true,
+    // same as above
+    refresh: false
+  })
+
+  return (
+    <div>
+      <div>{E.ENABLED}</div>
+      <div>{map[E.ENABLED]?.label}</div>
+      <div>{statusDict.getLabel(E.ENABLED)}</div>
+      <div>{statusDict.getItem(E.DISABLED)?.color}</div>
+      <div>{list.length}</div>
+    </div>
+  )
+}
 ```

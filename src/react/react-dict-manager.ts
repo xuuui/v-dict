@@ -29,13 +29,14 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   const defineDictOptionsMap = new Map<string, Recordable>()
 
   const maps = Object.create(null) as Recordable<DictMap>
-  const listenersMap = Object.create(null) as Recordable<AnyFn[]>
+  const listenersMap = Object.create(null) as Recordable<Set<AnyFn>>
 
   function emitChange(code?: string) {
-    const listeners = code ? listenersMap[code] ?? [] : Object.values(listenersMap).flat()
-    for (let listener of listeners) {
-      listener()
-    }
+    const listeners = code ? (listenersMap[code] ?? new Set()) : Object.values(listenersMap).reduce((acc, set) => {
+      set.forEach((listener) => acc.add(listener))
+      return acc
+    }, new Set<AnyFn>())
+    listeners.forEach((listener) => listener())
   }
 
   function clear(code?: string) {
@@ -102,9 +103,10 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
     }
 
     function subscribeMap(listener: AnyFn) {
-      listenersMap[code] = [...(listenersMap[code] ?? []), listener]
+      listenersMap[code] ??= new Set()
+      listenersMap[code].add(listener)
       return () => {
-        listenersMap[code] = listenersMap[code].filter((l) => l !== listener)
+        listenersMap[code].delete(listener)
       }
     }
 
@@ -150,12 +152,14 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         !clone ? globalLoadPromise : createPromise()
       )
 
-      const map = useSyncExternalStore(subscribeMap, getMapSnapshot)
+      const globalMap = useSyncExternalStore(subscribeMap, getMapSnapshot)
       const [clonedMap, setClonedMap] = useState(new Map())
 
+      const map = !clone ? globalMap : clonedMap
+
       const state = useMemo(
-        () => createStateFromMap(!clone ? map : clonedMap),
-        [clone, map, clonedMap]
+        () => createStateFromMap(map),
+        [map]
       )
 
       const load = useCallback((options?: Recordable) => {

@@ -7,8 +7,8 @@
     "type": "git",
     "url": "https://github.com/rrryyi/v-dict"
   },
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "typings": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -39,11 +39,9 @@
     "vue",
     "react",
     "dict",
-    "dictionary",
-    "vue3",
-    "react-dict"
+    "dictionary"
   ],
-  "author": "",
+  "author": "rrryyi",
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
