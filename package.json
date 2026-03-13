@@ -1,11 +1,11 @@
 {
   "name": "v-dict",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "type": "module",
   "description": "Vue3 & React Dict Manager",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xuuui/v-dict"
+    "url": "https://github.com/rrryyi/v-dict"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
