@@ -182,12 +182,12 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
           emitChange(code)
           return
         }
-        setClonedMap(map)
+        setClonedMap(new Map())
       }, [])
 
       const getItem = useCallback((value?: DictValue | null) => {
         return value !== null && value !== undefined ? state.map[value] : null
-      }, [])
+      }, [state])
 
       useEffect(() => {
         if (!remote || immediate) {
