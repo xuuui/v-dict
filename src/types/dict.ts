@@ -46,17 +46,8 @@ export type Dict<
   load: (options?: O) => LoadPromise
   clear: () => void
   getItem: (value?: I['value'] | Nil) => I | Nil
-  stateRef?: {
-    current: {
-      list: I[]
-      E: {
-        [X in K]: X
-      }
-      map: {
-        [X in K]: I
-      }
-      getItem: (value?: I['value'] | Nil) => I | Nil
-    }
+  ref?: {
+    current: Omit<Dict<K, I, O>, 'ref'>
   }
 }
 
