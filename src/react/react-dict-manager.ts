@@ -32,10 +32,12 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
   const listenersMap = Object.create(null) as Recordable<Set<AnyFn>>
 
   function emitChange(code?: string) {
-    const listeners = code ? (listenersMap[code] ?? new Set()) : Object.values(listenersMap).reduce((acc, set) => {
-      set.forEach((listener) => acc.add(listener))
-      return acc
-    }, new Set<AnyFn>())
+    const listeners = code
+      ? (listenersMap[code] ?? new Set())
+      : Object.values(listenersMap).reduce((acc, set) => {
+          set.forEach((listener) => acc.add(listener))
+          return acc
+        }, new Set<AnyFn>())
     listeners.forEach((listener) => listener())
   }
 
@@ -81,7 +83,7 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
 
     const { data, remote, fetch, extra, transformer, itemTransformer } = _defineDictOptions
 
-    let globalLoadPromise: LoadPromise | null = null
+    let globalLoadPromise: LoadPromise = createPromise()
     let init = false
 
     async function loadDict(options: Recordable, map: DictMap = new Map()) {
@@ -132,10 +134,15 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
         Array.from(map.keys()).map((key) => [key, transformer?.(key) ?? key])
       )
 
+      const getItem = (value?: DictValue | null) => {
+        return value !== null && value !== undefined ? newObj[value] : null
+      }
+
       return {
         map: newObj,
         list: newList,
-        E: newE
+        E: newE,
+        getItem
       }
     }
 
@@ -148,23 +155,25 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
       }
       const { clone, immediate, refresh } = mergedOptions
 
-      const loadPromiseRef = useRef<LoadPromise | null>(
-        !clone ? globalLoadPromise : createPromise()
-      )
+      const clonedLoadPromiseRef = useRef<LoadPromise | null>(null)
 
       const globalMap = useSyncExternalStore(subscribeMap, getMapSnapshot)
       const [clonedMap, setClonedMap] = useState(new Map())
 
+      const loadPromise = !clone ? globalLoadPromise : clonedLoadPromiseRef.current
       const map = !clone ? globalMap : clonedMap
 
-      const state = useMemo(
-        () => createStateFromMap(map),
-        [map]
-      )
+      // const state = useMemo(() => createStateFromMap(map), [map])
+
+      const stateRef = useRef(createStateFromMap(map))
 
       const load = useCallback((options?: Recordable) => {
-        const oldLoadPromise = loadPromiseRef.current
-        loadPromiseRef.current = createPromise()
+        const oldLoadPromise = loadPromise
+        if (!clone) {
+          globalLoadPromise = createPromise()
+        } else {
+          clonedLoadPromiseRef.current = createPromise()
+        }
 
         loadDict({ ...mergedOptions, ...options }).then((map) => {
           if (!clone) {
@@ -173,71 +182,60 @@ export function createDictManager<E extends ExtraGetter, F extends Fetch>(
           } else {
             setClonedMap(map)
           }
+          stateRef.current = createStateFromMap(map)
+
           oldLoadPromise?.resolve(undefined)
-          loadPromiseRef.current!.resolve(undefined)
+          if (!clone) {
+            globalLoadPromise.resolve(undefined)
+          } else {
+            clonedLoadPromiseRef.current?.resolve(undefined)
+          }
         })
 
-        return loadPromiseRef.current
+        return !clone ? globalLoadPromise : clonedLoadPromiseRef.current
       }, [])
 
-      const clear = useCallback(() => {
+      const clear = () => {
         if (!clone) {
           maps[code] = new Map()
           emitChange(code)
           return
         }
         setClonedMap(new Map())
-      }, [])
-
-      const getItem = useCallback((value?: DictValue | null) => {
-        return value !== null && value !== undefined ? state.map[value] : null
-      }, [state])
+      }
 
       useEffect(() => {
-        if (!remote || immediate) {
-          if (clone) {
-            load()
-          } else {
-            if (!globalLoadPromise) {
-              globalLoadPromise = createPromise()
-              load()
-            } else {
-              globalLoadPromise.then(() => {
-                if (!init) {
-                  init = true
-                  load()
-                } else if (refresh) {
-                  load()
-                }
-              })
-            }
-          }
+        if (remote && !immediate) {
+          return
+        }
+        if (clone) {
+          load()
         } else {
-          if (!globalLoadPromise) {
-            globalLoadPromise = createPromise()
-            globalLoadPromise.resolve(undefined)
+          if (!init) {
+            init = true
+            load()
+          } else if (refresh) {
+            load()
           }
         }
       }, [])
 
       const ctx = useMemo(() => {
-        const _ctx = {
-          map: state.map,
-          list: state.list,
-          E: state.E,
-          loadPromise: loadPromiseRef.current,
+        const value = {
+          ...stateRef.current,
+          loadPromise,
           load,
-          getItem,
           clear
         }
         return {
-          ..._ctx,
+          ...value,
           // @ts-ignore
-          ...managerExtra?.(_ctx),
+          ...managerExtra?.(value),
           // @ts-ignore
-          ...extra?.(_ctx)
+          ...extra?.(value),
+          stateRef
         }
-      }, [state, loadPromiseRef.current])
+      }, [stateRef.current, loadPromise])
 
       return ctx
     }

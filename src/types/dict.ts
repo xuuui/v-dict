@@ -46,6 +46,18 @@ export type Dict<
   load: (options?: O) => LoadPromise
   clear: () => void
   getItem: (value?: I['value'] | Nil) => I | Nil
+  stateRef?: {
+    current: {
+      list: I[]
+      E: {
+        [X in K]: X
+      }
+      map: {
+        [X in K]: I
+      }
+      getItem: (value?: I['value'] | Nil) => I | Nil
+    }
+  }
 }
 
 export type Fetch = (code: string, options: Recordable) => MaybePromise<DictItemRecord[]>
@@ -84,8 +96,8 @@ type CreateDict<D extends Recordable<Recordable>, F extends Fetch> = Dict<
       ? Item extends never
         ? DictItem
         : Item extends Recordable
-        ? OptionalRequired<Item, 'label' | 'value'>
-        : DictItem
+          ? OptionalRequired<Item, 'label' | 'value'>
+          : DictItem
       : DictItem
   >,
   Simplify<Options<F>>
@@ -127,14 +139,16 @@ export interface DefineDict<ME extends ExtraGetter, MF extends Fetch> {
   ): UseDict<ReturnType<ME> & ReturnType<E>, D, F extends undefined ? MF : F>
 }
 
-export type VDictItem<T extends AnyFn> = ReturnType<T> extends {
-  list: Array<infer R>
-}
-  ? R
-  : never
+export type VDictItem<T extends AnyFn> =
+  ReturnType<T> extends {
+    list: Array<infer R>
+  }
+    ? R
+    : never
 
-export type VDictUnionValue<T extends AnyFn> = ReturnType<T> extends {
-  E: infer R
-}
-  ? keyof R
-  : never
+export type VDictUnionValue<T extends AnyFn> =
+  ReturnType<T> extends {
+    E: infer R
+  }
+    ? keyof R
+    : never
