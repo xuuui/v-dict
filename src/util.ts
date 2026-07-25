@@ -67,7 +67,9 @@ export function mapToList(
     itemTransformer?: (item: DictItemRecord) => any
   } = {}
 ): DictItemRecord[] {
-  const values = isFunction(itemTransformer) ? map.values().map(itemTransformer) : map.values()
+  const values = isFunction(itemTransformer)
+    ? [...map.values()].map(itemTransformer)
+    : [...map.values()]
   list.splice(0, list.length, ...values)
   return list
 }
